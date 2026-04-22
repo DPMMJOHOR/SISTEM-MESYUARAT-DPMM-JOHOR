@@ -311,10 +311,10 @@
     <div class="text-center mb-7">
       <div class="flex justify-center mb-4">
         <div style="width:96px;height:96px;border-radius:50%;border:3px solid var(--blue-pale);padding:4px;background:#fff;box-shadow:0 6px 24px rgba(37,99,235,0.15);">
-          <img src="LogoBulat_DPMMNJ-02.png" alt="DPMM Johor"
+          <img src="https://lh3.googleusercontent.com/d/1McagB5gyqvsApfp3t9EF2UDMk45gFxrh" alt="DPMM Johor"
                style="width:100%;height:100%;object-fit:contain;border-radius:50%;"
                onerror="this.style.display='none';document.getElementById('lgLogoFallback').style.display='flex'">
-          <div id="lgLogoFallback" style="display:flex;width:96px;height:96px;background:linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%);border-radius:50%;align-items:center;justify-content:center;">
+          <div id="lgLogoFallback" style="display:none;width:96px;height:96px;background:linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%);border-radius:50%;align-items:center;justify-content:center;">
             <span style="font-family:'Outfit',sans-serif;font-weight:900;color:#fff;font-size:2rem;">DPMM</span>
           </div>
         </div>
@@ -579,7 +579,7 @@
     <!-- WhatsApp Templates Section -->
     <div class="card" style="padding:1.5rem;">
       <p class="sec-label">Mesej</p>
-      <h3 style="font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:700;color:var(--blue-dark);margin-bottom:1.25rem;">Template WhatsApp</h3>
+      <h3 id="waTplFormTitle" style="font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:700;color:var(--blue-dark);margin-bottom:1.25rem;">Template WhatsApp</h3>
       
       <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:1.25rem;align-items:start;">
         <!-- Form -->
@@ -844,11 +844,10 @@ const SUPABASE_URL = 'https://lzoloupwtqmjyupvofhh.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6b2xvdXB3dHFtanl1cHZvZmhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NTMxMTEsImV4cCI6MjA4ODUyOTExMX0.tBcGc6KfPyjUmJngbLTBHv-GZkSoSoyWGXwlXFZ0ShE';
 const GOOGLE_CID   = 'YOUR_GOOGLE_CLIENT_ID_HERE';
 const MAIN_FOLDER  = 'Sistem Pengurusan Mesyuarat DPMM Johor';
-const WA_TPL_KEY   = 'dpmm_wa_templates';
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let user=null, meeting=null, members=[], kehadiran=[], merged=[], filtered=[];
+let user=null, meeting=null, members=[], kehadiran=[], merged=[], filtered=[], waTemplates=[];
 let editNoAhli='', selStatus='', gToken=null, gapiReady=false, gisReady=false, tokenClient=null;
 let waTargetPhone='', waTargetRow=null, selTplId=null;
 
@@ -1013,8 +1012,8 @@ function updateDashboard(){
 }
 
 // ── TABLE (compact merged column) ──
-const ADMIN_H=['Bil','Ahli & Syarikat','No. HP','Daerah','Catatan','Tindakan'];
-const AJK_H  =['Bil','Ahli & Syarikat','No. HP','Daerah','Catatan','Tindakan'];
+const ADMIN_H=['Bil','Ahli & Syarikat','No. HP','Daerah','Status','Catatan','Jawatan','Dikemaskini','Tindakan'];
+const AJK_H  =['Bil','Ahli & Syarikat','No. HP','Daerah','Status','Catatan','Tindakan'];
 
 function renderTable(){
   const headers=isAdmin()?ADMIN_H:AJK_H;
@@ -1043,13 +1042,18 @@ function renderTable(){
       <div class="member-cell-co">${r.NAMA_AHLI||'-'}</div>
       ${r.NAMA?`<div class="member-cell-pic">👤 ${r.NAMA}</div>`:''}
     </div>`;
-    const adminCols='';
+    const adminCols=isAdmin()?`
+      <td style="padding:.4rem .6rem;font-size:.7rem;color:var(--text-soft);white-space:nowrap;">${r.JAWATAN||'—'}</td>
+      <td style="padding:.4rem .6rem;font-size:.68rem;color:var(--text-faint);white-space:nowrap;">${r.dikemaskini_oleh?shortId(r.dikemaskini_oleh)+'<br><span style="color:#c7d2fe">'+fmtDT(r.dikemaskini_pada)+'</span>':'-'}</td>
+    `:'';
     return `<tr class="trow" style="border-bottom:1px solid #F0F5FF;">
       <td style="padding:.4rem .6rem;font-size:.7rem;color:var(--text-faint);text-align:center;">${i+1}</td>
       <td style="padding:.4rem .6rem;">${memberCell}</td>
       <td style="padding:.4rem .6rem;font-size:.75rem;color:var(--text-mid);white-space:nowrap;">${r.NO_HP||'—'}</td>
       <td style="padding:.4rem .6rem;font-size:.7rem;color:var(--text-soft);white-space:nowrap;">${r.DAERAH||'—'}</td>
+      <td style="padding:.4rem .6rem;"><span class="${badge}" style="font-size:.68rem;padding:.2rem .5rem;border-radius:999px;font-weight:700;">${r.status}</span></td>
       <td style="padding:.4rem .6rem;font-size:.7rem;color:var(--text-soft);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(r.catatan||'')}">${r.catatan||'—'}</td>
+      ${adminCols}
       <td style="padding:.4rem .6rem;"><div style="display:flex;gap:3px;">${editBtn}${waBtn}</div></td>
     </tr>`;
   }).join('');
@@ -1107,69 +1111,87 @@ async function saveStatus(){
 }
 
 // ════════════════════════════════════════════════
-//  WHATSAPP TEMPLATES
+//  WHATSAPP TEMPLATES — Supabase DPMM_TEMPLATES
 // ════════════════════════════════════════════════
-function loadTpls(){return JSON.parse(localStorage.getItem(WA_TPL_KEY)||'[]');}
-function saveTpls(arr){localStorage.setItem(WA_TPL_KEY,JSON.stringify(arr));}
 
-function renderTplList(){
-  const tpls=loadTpls(), el=document.getElementById('waTplList');
-  document.getElementById('tplCount').textContent=tpls.length+' template';
-  if(tpls.length===0){el.innerHTML='<p style="font-size:.85rem;color:var(--text-faint);text-align:center;padding:2rem 0;">Belum ada template. Tambah satu di sebelah kiri.</p>';return;}
-  el.innerHTML=tpls.map(t=>`
+// Load all templates from Supabase into waTemplates[]
+async function loadWaTemplates(){
+  const{data}=await db.from('DPMM_TEMPLATES').select('id,template_key,nama,kandungan,created_by').order('id');
+  waTemplates=data||[];
+}
+
+async function renderTplList(){
+  await loadWaTemplates();
+  const el=document.getElementById('waTplList');
+  document.getElementById('tplCount').textContent=waTemplates.length+' template';
+  if(waTemplates.length===0){
+    el.innerHTML='<p style="font-size:.85rem;color:var(--text-faint);text-align:center;padding:2rem 0;">Belum ada template. Tambah satu di sebelah kiri.</p>';
+    return;
+  }
+  el.innerHTML=waTemplates.map(t=>`
     <div class="wa-template-card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;">
         <div style="display:flex;align-items:center;gap:7px;flex:1;min-width:0;">
           <span class="wa-badge">💬</span>
-          <span style="font-size:.875rem;font-weight:700;color:var(--text-mid);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(t.name)}</span>
+          <span style="font-size:.875rem;font-weight:700;color:var(--text-mid);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(t.nama)}</span>
         </div>
         <div style="display:flex;gap:4px;flex-shrink:0;">
-          <button onclick="editTpl('${t.id}')" style="background:var(--blue-light);border:1.5px solid var(--blue-pale);color:var(--blue);font-size:.72rem;padding:.25rem .55rem;border-radius:6px;cursor:pointer;font-weight:600;transition:background .15s;" onmouseover="this.style.background='var(--blue-pale)'" onmouseout="this.style.background='var(--blue-light)'">✏️ Edit</button>
-          <button onclick="deleteTpl('${t.id}')" style="background:var(--red-light);border:1.5px solid var(--red-mid);color:var(--red);font-size:.72rem;padding:.25rem .55rem;border-radius:6px;cursor:pointer;font-weight:600;transition:background .15s;" onmouseover="this.style.background='#FEE2E2'" onmouseout="this.style.background='var(--red-light)'">🗑️ Padam</button>
+          <button onclick="editTpl(${t.id})" style="background:var(--blue-light);border:1.5px solid var(--blue-pale);color:var(--blue);font-size:.72rem;padding:.25rem .55rem;border-radius:6px;cursor:pointer;font-weight:600;transition:background .15s;" onmouseover="this.style.background='var(--blue-pale)'" onmouseout="this.style.background='var(--blue-light)'">✏️ Edit</button>
+          <button onclick="deleteTpl(${t.id})" style="background:var(--red-light);border:1.5px solid var(--red-mid);color:var(--red);font-size:.72rem;padding:.25rem .55rem;border-radius:6px;cursor:pointer;font-weight:600;transition:background .15s;" onmouseover="this.style.background='#FEE2E2'" onmouseout="this.style.background='var(--red-light)'">🗑️ Padam</button>
         </div>
       </div>
-      <div style="font-size:.78rem;color:var(--text-soft);background:var(--blue-light);border-radius:7px;padding:.5rem .75rem;white-space:pre-wrap;max-height:70px;overflow:hidden;line-height:1.5;">${esc(t.body).substring(0,200)}${t.body.length>200?'…':''}</div>
+      <div style="font-size:.78rem;color:var(--text-soft);background:var(--blue-light);border-radius:7px;padding:.5rem .75rem;white-space:pre-wrap;max-height:70px;overflow:hidden;line-height:1.5;">${esc(t.kandungan).substring(0,200)}${t.kandungan.length>200?'…':''}</div>
     </div>
   `).join('');
 }
 
-function saveTpl(){
-  const name=document.getElementById('waTplName').value.trim();
-  const body=document.getElementById('waTplBody').value.trim();
-  const id=document.getElementById('waTplId').value;
-  if(!name||!body){toast('⚠️ Nama dan teks mesej wajib diisi.','err');return;}
-  const tpls=loadTpls();
+async function saveTpl(){
+  const nama=document.getElementById('waTplName').value.trim();
+  const kandungan=document.getElementById('waTplBody').value.trim();
+  const idRaw=document.getElementById('waTplId').value;
+  const id=idRaw?parseInt(idRaw):null;
+  if(!nama||!kandungan){toast('⚠️ Nama dan teks mesej wajib diisi.','err');return;}
   if(id){
-    const idx=tpls.findIndex(t=>t.id===id);
-    if(idx>=0){tpls[idx].name=name;tpls[idx].body=body;}
+    // Update existing
+    const{error}=await db.from('DPMM_TEMPLATES').update({nama,kandungan,updated_at:new Date().toISOString()}).eq('id',id);
+    if(error){toast('❌ Gagal kemaskini: '+error.message,'err');return;}
   }else{
-    tpls.push({id:'tpl_'+Date.now(),name,body});
+    // Insert new — template_key = timestamp int
+    const{error}=await db.from('DPMM_TEMPLATES').insert({template_key:Date.now(),nama,kandungan,created_by:user.user_id});
+    if(error){toast('❌ Gagal simpan: '+error.message,'err');return;}
   }
-  saveTpls(tpls); cancelEditTpl(); renderTplList();
+  cancelEditTpl();
+  await renderTplList();
   toast('✅ Template '+(id?'dikemaskini':'disimpan')+'!');
 }
+
 function editTpl(id){
-  const tpls=loadTpls(), t=tpls.find(x=>x.id===id); if(!t)return;
+  const t=waTemplates.find(x=>x.id===id); if(!t)return;
   document.getElementById('waTplId').value=t.id;
-  document.getElementById('waTplName').value=t.name;
-  document.getElementById('waTplBody').value=t.body;
+  document.getElementById('waTplName').value=t.nama;
+  document.getElementById('waTplBody').value=t.kandungan;
   document.getElementById('waTplFormTitle').textContent='Edit Template';
   document.getElementById('waTplSaveLbl').textContent='Kemaskini Template';
   document.getElementById('waTplCancelBtn').classList.remove('hidden');
 }
-function deleteTpl(id){
+
+async function deleteTpl(id){
   if(!confirm('Padam template ini?'))return;
-  const tpls=loadTpls().filter(t=>t.id!==id);
-  saveTpls(tpls); renderTplList(); toast('🗑️ Template dipadam.');
+  const{error}=await db.from('DPMM_TEMPLATES').delete().eq('id',id);
+  if(error){toast('❌ Gagal padam: '+error.message,'err');return;}
+  await renderTplList();
+  toast('🗑️ Template dipadam.');
 }
+
 function cancelEditTpl(){
   document.getElementById('waTplId').value='';
   document.getElementById('waTplName').value='';
   document.getElementById('waTplBody').value='';
-  document.getElementById('waTplFormTitle').textContent='Tambah Template Baru';
+  document.getElementById('waTplFormTitle').textContent='Template WhatsApp';
   document.getElementById('waTplSaveLbl').textContent='Simpan Template';
   document.getElementById('waTplCancelBtn').classList.add('hidden');
 }
+
 function insertPh(ph){
   const ta=document.getElementById('waTplBody');
   const start=ta.selectionStart, end=ta.selectionEnd;
@@ -1179,52 +1201,55 @@ function insertPh(ph){
 }
 
 // ── WA Template Picker Modal ──
-function openWATpl(phone,noAhli,namaSyarikat){
-  const tpls=loadTpls();
-  if(tpls.length===0){
-    // fallback: direct WA
+async function openWATpl(phone,noAhli,namaSyarikat){
+  await loadWaTemplates();
+  if(waTemplates.length===0){
+    // No templates: direct wasap.my fallback
     window.open('https://wasap.my/'+phone,'_blank'); return;
   }
   waTargetPhone=phone; waTargetRow={noAhli,namaSyarikat}; selTplId=null;
   document.getElementById('waTplTarget').textContent='💬 '+namaSyarikat+' · '+phone;
   const list=document.getElementById('waTplPickerList');
-  list.innerHTML=tpls.map(t=>`
-    <div onclick="selectTpl('${t.id}')" id="ptpl-${t.id}" style="padding:.625rem .875rem;border:2px solid var(--border);border-radius:9px;cursor:pointer;transition:all .15s;background:#fff;">
-      <div style="font-size:.85rem;font-weight:700;color:var(--text-mid);">${esc(t.name)}</div>
-      <div style="font-size:.72rem;color:var(--text-faint);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(t.body.substring(0,60))}…</div>
+  list.innerHTML=waTemplates.map(t=>`
+    <div onclick="selectTpl(${t.id})" id="ptpl-${t.id}" style="padding:.625rem .875rem;border:2px solid var(--border);border-radius:9px;cursor:pointer;transition:all .15s;background:#fff;">
+      <div style="font-size:.85rem;font-weight:700;color:var(--text-mid);">${esc(t.nama)}</div>
+      <div style="font-size:.72rem;color:var(--text-faint);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(t.kandungan.substring(0,60))}…</div>
     </div>
   `).join('');
   document.getElementById('waTplPreview').textContent='Pilih template di atas untuk preview';
   document.getElementById('btnSendWA').disabled=true;
   document.getElementById('waTplModal').classList.remove('hidden');
 }
+
 function selectTpl(id){
-  const tpls=loadTpls(), t=tpls.find(x=>x.id===id); if(!t)return;
+  const t=waTemplates.find(x=>x.id===id); if(!t)return;
   selTplId=id;
-  // Highlight
-  tpls.forEach(x=>{
+  // Highlight selected
+  waTemplates.forEach(x=>{
     const el=document.getElementById('ptpl-'+x.id);
     if(el) el.style.cssText=x.id===id?'padding:.625rem .875rem;border:2px solid var(--green);border-radius:9px;cursor:pointer;background:#F0FDF4;':'padding:.625rem .875rem;border:2px solid var(--border);border-radius:9px;cursor:pointer;background:#fff;';
   });
-  // Fill preview
-  let msg=t.body;
+  // Fill preview with replaced placeholders
   const row=waTargetRow||{};
   const tarikh=meeting?.tarikh?fmtDate(meeting.tarikh):'';
   const tempat=meeting?.tempat||'';
+  let msg=t.kandungan;
   msg=msg.replace(/\{nama_ahli\}/g,row.namaSyarikat||'').replace(/\{no_ahli\}/g,row.noAhli||'').replace(/\{syarikat\}/g,row.namaSyarikat||'').replace(/\{nama_pic\}/g,'').replace(/\{tarikh\}/g,tarikh).replace(/\{tempat\}/g,tempat).replace(/\{nama_mesyuarat\}/g,meeting?.nama||'');
   document.getElementById('waTplPreview').textContent=msg;
   document.getElementById('btnSendWA').disabled=false;
 }
+
 function sendWA(){
-  const tpls=loadTpls(), t=tpls.find(x=>x.id===selTplId); if(!t||!waTargetPhone)return;
-  let msg=t.body;
+  const t=waTemplates.find(x=>x.id===selTplId); if(!t||!waTargetPhone)return;
   const row=waTargetRow||{};
   const tarikh=meeting?.tarikh?fmtDate(meeting.tarikh):'';
   const tempat=meeting?.tempat||'';
+  let msg=t.kandungan;
   msg=msg.replace(/\{nama_ahli\}/g,row.namaSyarikat||'').replace(/\{no_ahli\}/g,row.noAhli||'').replace(/\{syarikat\}/g,row.namaSyarikat||'').replace(/\{nama_pic\}/g,'').replace(/\{tarikh\}/g,tarikh).replace(/\{tempat\}/g,tempat).replace(/\{nama_mesyuarat\}/g,meeting?.nama||'');
   window.open('https://wa.me/'+waTargetPhone+'?text='+encodeURIComponent(msg),'_blank');
   closeWaTplModal();
 }
+
 function closeWaTplModal(){document.getElementById('waTplModal').classList.add('hidden');waTargetPhone='';waTargetRow=null;selTplId=null;}
 
 // ── CREATE MEETING ──
