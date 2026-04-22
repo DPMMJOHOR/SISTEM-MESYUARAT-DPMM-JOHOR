@@ -279,6 +279,9 @@
   @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
   .fade-up { animation: fadeUp .3s ease forwards; }
 
+  /* ── Hidden (Fallback if Tailwind fails) ── */
+  .hidden { display: none !important; }
+
   /* ── Divider ── */
   .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); margin: 1rem 0; }
 
@@ -864,6 +867,10 @@ const isAdmin = () => user && user.peranan !== 'ajk';
 
 // ── LOGIN ──
 document.addEventListener('DOMContentLoaded', () => {
+  // Ensure login screen is visible and main app is hidden on load
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('mainApp').classList.add('hidden');
+  
   document.getElementById('lgPw').addEventListener('keyup', e => { if(e.key==='Enter') doLogin(); });
   document.getElementById('lgId').addEventListener('keyup', e => { if(e.key==='Enter') doLogin(); });
 });
