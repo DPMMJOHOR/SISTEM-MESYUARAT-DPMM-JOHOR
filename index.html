@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistem Pengurusan Mesyuarat — DPMM Negeri Johor</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --navy:       #0D1F3C;
+    --navy-mid:   #152B50;
+    --navy-light: #1E3A6E;
+    --red:        #C0392B;
+    --red-light:  #E74C3C;
+    --gold:       #D4A017;
+    --gold-light: #F0C040;
+    --white:      #FFFFFF;
+    --off-white:  #F7F8FC;
+    --gray-soft:  #E8ECF4;
+    --text-dark:  #0D1F3C;
+    --text-mid:   #4A5568;
+    --text-light: #9BA3AF;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--off-white);
+    color: var(--text-dark);
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, .display { font-family: 'Outfit', sans-serif; }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--gray-soft); }
+  ::-webkit-scrollbar-thumb { background: var(--navy-light); border-radius: 10px; }
+
+  /* ── Status Badges ── */
+  .badge-hadir  { background: #D1FAE5; color: #065F46; border: 1px solid #6EE7B7; }
+  .badge-tidak  { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; }
+  .badge-belum  { background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; }
+  .badge-lain   { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; }
+
+  /* ── Spinner ── */
+  .spinner {
+    border: 3px solid rgba(255,255,255,0.2);
+    border-top: 3px solid #fff;
+    border-radius: 50%;
+    width: 20px; height: 20px;
+    animation: spin .7s linear infinite;
+    display: inline-block;
+  }
+  .spinner-dark {
+    border: 3px solid var(--gray-soft);
+    border-top: 3px solid var(--navy);
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Nav Tabs ── */
+  .nav-tab {
+    border-bottom: 3px solid transparent;
+    color: #8A9AB8;
+    transition: all .2s;
+    font-weight: 500;
+    font-size: 0.875rem;
+    letter-spacing: 0.01em;
+  }
+  .nav-tab:hover { color: var(--navy); }
+  .nav-tab-active {
+    border-bottom: 3px solid var(--red) !important;
+    color: var(--navy) !important;
+    font-weight: 700;
+  }
+
+  /* ── Admin sub tabs ── */
+  .admtab-active   { background: var(--navy); color: #fff; }
+  .admtab-inactive { background: var(--gray-soft); color: var(--text-mid); }
+  .admtab-inactive:hover { background: #DDE3EE; }
+
+  /* ── Table ── */
+  .mrow { transition: background .12s; }
+  .mrow:hover { background: #EEF2FB; }
+  .mrow:nth-child(even) { background: #FAFBFE; }
+  .mrow:nth-child(even):hover { background: #EEF2FB; }
+
+  /* ── Card ── */
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #E2E8F4;
+    box-shadow: 0 2px 8px rgba(13,31,60,0.06);
+  }
+
+  /* ── Input ── */
+  .inp {
+    width: 100%;
+    border: 1.5px solid #D1D9E8;
+    border-radius: 8px;
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: #fff;
+    color: var(--text-dark);
+    transition: border-color .15s, box-shadow .15s;
+    outline: none;
+  }
+  .inp:focus {
+    border-color: var(--navy-light);
+    box-shadow: 0 0 0 3px rgba(30,58,110,0.12);
+  }
+  .inp::placeholder { color: #A0AEC0; }
+
+  /* ── Button variants ── */
+  .btn-primary {
+    background: var(--navy);
+    color: #fff;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.65rem 1.25rem;
+    transition: background .15s, transform .1s;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .btn-primary:hover { background: var(--navy-light); transform: translateY(-1px); }
+  .btn-primary:disabled { background: #8A9AB8; cursor: not-allowed; transform: none; }
+
+  .btn-red {
+    background: var(--red);
+    color: #fff;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    transition: background .15s;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-red:hover { background: var(--red-light); }
+
+  .btn-ghost {
+    background: var(--gray-soft);
+    color: var(--text-mid);
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    transition: background .15s;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-ghost:hover { background: #DDE3EE; }
+
+  /* ── KPI Cards ── */
+  .kpi-card { position: relative; overflow: hidden; }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    border-radius: 12px 12px 0 0;
+  }
+  .kpi-green::before  { background: linear-gradient(90deg, #10B981, #34D399); }
+  .kpi-red::before    { background: linear-gradient(90deg, #EF4444, #F87171); }
+  .kpi-amber::before  { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
+  .kpi-slate::before  { background: linear-gradient(90deg, #64748B, #94A3B8); }
+
+  /* ── Header gradient ── */
+  .app-header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 60%, var(--navy-light) 100%);
+    border-bottom: 3px solid var(--red);
+  }
+
+  /* ── Login Screen ── */
+  .login-bg {
+    background: var(--navy);
+    position: relative;
+    overflow: hidden;
+  }
+  .login-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 20%, rgba(192,57,43,0.15) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 80% 80%, rgba(30,58,110,0.4) 0%, transparent 60%);
+  }
+  .login-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .login-card {
+    background: rgba(255,255,255,0.97);
+    border-radius: 20px;
+    box-shadow:
+      0 25px 60px rgba(0,0,0,0.4),
+      0 0 0 1px rgba(255,255,255,0.1);
+    position: relative;
+    z-index: 10;
+  }
+
+  .login-logo-ring {
+    background: var(--navy);
+    border-radius: 50%;
+    padding: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(13,31,60,0.4);
+  }
+
+  /* ── Meeting Banner ── */
+  .meeting-banner {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+    border-radius: 14px;
+    border-left: 5px solid var(--red);
+    position: relative;
+    overflow: hidden;
+  }
+  .meeting-banner::after {
+    content: '';
+    position: absolute;
+    right: -20px; top: -20px;
+    width: 160px; height: 160px;
+    background: radial-gradient(circle, rgba(255,255,255,0.06), transparent 70%);
+    border-radius: 50%;
+  }
+
+  /* ── Section header ── */
+  .section-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--red);
+    margin-bottom: 0.5rem;
+  }
+
+  /* ── Print styles ── */
+  @media print {
+    .no-print { display: none !important; }
+    @page { size: A4 landscape; margin: 1cm; }
+    body { font-size: 10px; background: #fff; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 4px 6px; }
+    th { background: #0D1F3C; color: #fff; }
+    tr:nth-child(even) td { background: #F0F4FC; }
+    .card { box-shadow: none; border: 1px solid #ccc; }
+  }
+
+  /* ── Animations ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .fade-up { animation: fadeUp 0.35s ease forwards; }
+
+  /* ── Stat button ── */
+  .stat-btn {
+    transition: all .15s;
+    cursor: pointer;
+    text-align: center;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  /* ── Logo text ── */
+  .logo-abbr {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  /* ── Meet list item ── */
+  .meet-item {
+    border: 1.5px solid #E2E8F4;
+    border-radius: 10px;
+    padding: 12px 14px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .meet-item:hover { border-color: #A0B4D8; box-shadow: 0 2px 10px rgba(13,31,60,0.08); }
+  .meet-item.active { border-color: var(--red); background: #FFF5F5; }
+
+  /* ── Separator ── */
+  .sep { height: 1px; background: linear-gradient(90deg, transparent, #E2E8F4, transparent); margin: 1rem 0; }
+
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  LOGIN SCREEN                                          -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="loginScreen" class="min-h-screen flex items-center justify-center login-bg p-4">
+
+  <!-- Decorative blobs -->
+  <div style="position:absolute;width:300px;height:300px;top:-80px;left:-80px;background:radial-gradient(circle,rgba(192,57,43,0.18),transparent 70%);border-radius:50%;z-index:1;pointer-events:none;"></div>
+  <div style="position:absolute;width:400px;height:400px;bottom:-100px;right:-100px;background:radial-gradient(circle,rgba(30,58,110,0.3),transparent 70%);border-radius:50%;z-index:1;pointer-events:none;"></div>
+
+  <div class="login-card w-full max-w-md p-8 relative z-10 fade-up">
+
+    <!-- Logo area -->
+    <div class="text-center mb-8">
+      <!-- Use round logo -->
+      <div class="flex justify-center mb-4">
+        <div class="login-logo-ring w-24 h-24">
+          <img src="LogoBulat_DPMMNJ-02.png" alt="Logo DPMM Johor"
+               class="w-20 h-20 object-contain"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div style="display:none;width:80px;height:80px;background:var(--red);border-radius:50%;align-items:center;justify-content:center;">
+            <span class="logo-abbr text-white text-2xl">D</span>
+          </div>
+        </div>
+      </div>
+
+      <h1 class="text-xl font-bold text-gray-900" style="font-family:'Outfit',sans-serif;">
+        Sistem Pengurusan Mesyuarat
+      </h1>
+      <div class="mt-1 flex flex-col items-center gap-0.5">
+        <span class="text-sm font-semibold text-gray-600">Dewan Perniagaan Melayu Malaysia</span>
+        <span class="text-sm font-bold text-red-700 tracking-wide">Negeri Johor</span>
+      </div>
+
+      <!-- Jawi logo (text only, placed under title) -->
+      <div class="mt-3 flex justify-center">
+        <img src="LOGO_DPMM_JOHOR_JAWI_2026-01.png" alt="DPMM Johor Jawi"
+             class="h-8 object-contain opacity-70"
+             onerror="this.style.display='none'">
+      </div>
+    </div>
+
+    <div class="sep"></div>
+
+    <div id="loginErr" class="hidden mb-4 px-4 py-3 rounded-lg text-sm font-medium"
+         style="background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;"></div>
+
+    <div class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">ID Pengguna / Emel</label>
+        <input id="lgId" type="text" placeholder="Masukkan ID atau emel"
+               class="inp" autocomplete="username">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Kata Laluan</label>
+        <input id="lgPw" type="password" placeholder="••••••••"
+               class="inp" autocomplete="current-password">
+      </div>
+      <button id="lgBtn" onclick="doLogin()"
+              class="btn-primary w-full py-3 justify-center text-base">
+        Log Masuk
+      </button>
+    </div>
+
+    <p class="text-center text-xs text-gray-400 mt-6">
+      © 2026 DPMM Negeri Johor &nbsp;·&nbsp; Sistem Pengurusan Mesyuarat
+    </p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  MAIN APP                                              -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="mainApp" class="hidden">
+
+  <!-- HEADER -->
+  <header class="app-header no-print sticky top-0 z-40">
+    <div class="max-w-screen-2xl mx-auto px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+
+      <!-- Logo + Brand -->
+      <div class="flex items-center gap-3 shrink-0">
+        <img src="LogoBulat_DPMMNJ-02.png" alt="Logo DPMM Johor"
+             class="w-10 h-10 object-contain rounded-full bg-white p-0.5"
+             onerror="this.style.display='none'">
+        <div>
+          <div class="font-bold text-white text-sm leading-tight" style="font-family:'Outfit',sans-serif;">
+            Sistem Pengurusan Mesyuarat
+          </div>
+          <div class="text-xs leading-tight" style="color:var(--gold-light);">
+            DPMM Negeri Johor
+          </div>
+        </div>
+      </div>
+
+      <!-- Meeting Selector -->
+      <div class="flex items-center gap-2">
+        <span class="text-xs hidden sm:block" style="color:rgba(255,255,255,0.5);">Mesyuarat:</span>
+        <select id="meetSel" onchange="onMeetingChange()"
+                style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:8px;padding:0.4rem 0.75rem;font-size:0.8rem;font-family:'Plus Jakarta Sans',sans-serif;outline:none;cursor:pointer;max-width:220px;">
+        </select>
+      </div>
+
+      <!-- User info -->
+      <div class="flex items-center gap-2.5 shrink-0">
+        <div class="hidden sm:flex flex-col items-end">
+          <span id="hdrName" class="text-xs text-white font-medium"></span>
+          <span id="hdrBadge" class="text-xs rounded-full px-2 py-0.5 font-semibold mt-0.5"></span>
+        </div>
+        <button onclick="doLogout()"
+                style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:8px;font-size:0.75rem;padding:0.4rem 0.875rem;cursor:pointer;transition:background .15s;font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;"
+                onmouseover="this.style.background='rgba(255,255,255,0.2)'"
+                onmouseout="this.style.background='rgba(255,255,255,0.12)'">
+          Keluar
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- NAV TABS -->
+  <nav class="bg-white border-b border-gray-200 no-print" style="box-shadow:0 1px 4px rgba(13,31,60,0.06);">
+    <div class="max-w-screen-2xl mx-auto px-4 flex">
+      <button id="navDash"    onclick="showTab('dash')"    class="nav-tab px-5 py-3.5">
+        <span class="flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+          Dashboard
+        </span>
+      </button>
+      <button id="navSenarai" onclick="showTab('senarai')" class="nav-tab px-5 py-3.5">
+        <span class="flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          Senarai Kehadiran
+        </span>
+      </button>
+      <button id="navAdmin"   onclick="showTab('admin')"   class="nav-tab px-5 py-3.5 admin-only hidden">
+        <span class="flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Pentadbiran
+        </span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ─── DASHBOARD TAB ─── -->
+  <div id="tabDash" class="hidden max-w-screen-2xl mx-auto px-4 py-6 fade-up">
+
+    <!-- Meeting Banner -->
+    <div class="meeting-banner p-6 mb-6 text-white">
+      <div class="flex flex-wrap justify-between gap-4">
+        <div style="position:relative;z-index:1;">
+          <p class="section-title" style="color:var(--gold-light);">Mesyuarat Aktif</p>
+          <h2 id="dshName" class="text-xl font-bold mb-2" style="font-family:'Outfit',sans-serif;"></h2>
+          <div class="flex flex-wrap gap-4 text-sm" style="color:rgba(255,255,255,0.7);">
+            <span id="dshTarikh" class="flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              <span></span>
+            </span>
+            <span id="dshTempat" class="flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              <span></span>
+            </span>
+          </div>
+        </div>
+        <div class="flex flex-col gap-2" style="position:relative;z-index:1;">
+          <a id="dshDriveLink" href="#" target="_blank"
+             class="hidden items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-lg transition"
+             style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:#fff;text-decoration:none;">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+            Folder Dokumen Ahli
+          </a>
+          <p id="dshDriveHint" class="hidden text-xs" style="color:rgba(255,255,255,0.5);">Hantar link ini kepada ahli untuk submit dokumen</p>
+          <p id="dshNoDrive" class="text-xs" style="color:rgba(255,255,255,0.4);">Folder Google Drive belum disediakan</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+      <div class="card kpi-card kpi-green p-5">
+        <div class="flex justify-between items-start mb-3">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider mb-1" style="color:#6B7280;">Hadir</p>
+            <p id="cHadir" class="text-4xl font-bold" style="font-family:'Outfit',sans-serif;color:#059669;">0</p>
+          </div>
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center" style="background:#D1FAE5;">
+            <svg class="w-5 h-5" style="color:#059669;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+          </div>
+        </div>
+        <div class="h-1.5 rounded-full overflow-hidden" style="background:#E5E7EB;">
+          <div id="bHadir" class="h-full rounded-full transition-all" style="width:0%;background:linear-gradient(90deg,#10B981,#34D399);"></div>
+        </div>
+        <p id="pHadir" class="text-xs mt-1" style="color:#9BA3AF;">0%</p>
+      </div>
+
+      <div class="card kpi-card kpi-red p-5">
+        <div class="flex justify-between items-start mb-3">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider mb-1" style="color:#6B7280;">Tidak Hadir</p>
+            <p id="cTidak" class="text-4xl font-bold" style="font-family:'Outfit',sans-serif;color:#DC2626;">0</p>
+          </div>
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center" style="background:#FEE2E2;">
+            <svg class="w-5 h-5" style="color:#DC2626;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+          </div>
+        </div>
+        <div class="h-1.5 rounded-full overflow-hidden" style="background:#E5E7EB;">
+          <div id="bTidak" class="h-full rounded-full transition-all" style="width:0%;background:linear-gradient(90deg,#EF4444,#F87171);"></div>
+        </div>
+        <p id="pTidak" class="text-xs mt-1" style="color:#9BA3AF;">0%</p>
+      </div>
+
+      <div class="card kpi-card kpi-amber p-5">
+        <div class="flex justify-between items-start mb-3">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider mb-1" style="color:#6B7280;">Belum Dihubungi</p>
+            <p id="cBelum" class="text-4xl font-bold" style="font-family:'Outfit',sans-serif;color:#D97706;">0</p>
+          </div>
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center" style="background:#FEF3C7;">
+            <svg class="w-5 h-5" style="color:#D97706;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+          </div>
+        </div>
+        <div class="h-1.5 rounded-full overflow-hidden" style="background:#E5E7EB;">
+          <div id="bBelum" class="h-full rounded-full transition-all" style="width:0%;background:linear-gradient(90deg,#F59E0B,#FBBF24);"></div>
+        </div>
+        <p id="pBelum" class="text-xs mt-1" style="color:#9BA3AF;">0%</p>
+      </div>
+
+      <div class="card kpi-card kpi-slate p-5">
+        <div class="flex justify-between items-start mb-3">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider mb-1" style="color:#6B7280;">Lain-lain</p>
+            <p id="cLain" class="text-4xl font-bold" style="font-family:'Outfit',sans-serif;color:#64748B;">0</p>
+          </div>
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center" style="background:#F1F5F9;">
+            <svg class="w-5 h-5" style="color:#64748B;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          </div>
+        </div>
+        <div class="h-1.5 rounded-full overflow-hidden" style="background:#E5E7EB;">
+          <div id="bLain" class="h-full rounded-full transition-all" style="width:0%;background:linear-gradient(90deg,#64748B,#94A3B8);"></div>
+        </div>
+        <p id="pLain" class="text-xs mt-1" style="color:#9BA3AF;">0%</p>
+      </div>
+    </div>
+
+    <!-- Progress Bar Card -->
+    <div class="card p-6">
+      <div class="flex flex-wrap justify-between items-center mb-3 gap-2">
+        <h3 class="font-bold text-gray-700" style="font-family:'Outfit',sans-serif;">Kemajuan Keseluruhan</h3>
+        <span class="text-sm" style="color:#9BA3AF;">Jumlah: <strong id="cTotal" class="text-gray-700">0</strong> ahli didaftar</span>
+      </div>
+      <div class="w-full h-6 rounded-full overflow-hidden flex" style="background:#F1F5F9;">
+        <div id="pgHadir" class="h-full transition-all" style="width:0%;background:linear-gradient(90deg,#10B981,#34D399);" title="Hadir"></div>
+        <div id="pgTidak" class="h-full transition-all" style="width:0%;background:linear-gradient(90deg,#EF4444,#F87171);" title="Tidak Hadir"></div>
+        <div id="pgLain"  class="h-full transition-all" style="width:0%;background:linear-gradient(90deg,#64748B,#94A3B8);" title="Lain-lain"></div>
+        <div id="pgBelum" class="h-full transition-all" style="width:0%;background:linear-gradient(90deg,#F59E0B,#FBBF24);" title="Belum Dihubungi"></div>
+      </div>
+      <div class="flex flex-wrap gap-5 mt-3 text-xs" style="color:#6B7280;">
+        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full" style="background:#10B981;display:inline-block;"></span>Hadir</span>
+        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full" style="background:#EF4444;display:inline-block;"></span>Tidak Hadir</span>
+        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full" style="background:#F59E0B;display:inline-block;"></span>Belum Dihubungi</span>
+        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full" style="background:#64748B;display:inline-block;"></span>Lain-lain</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SENARAI KEHADIRAN TAB ─── -->
+  <div id="tabSenarai" class="hidden max-w-screen-2xl mx-auto px-4 py-6 fade-up">
+
+    <!-- Controls -->
+    <div class="card p-4 mb-4 no-print">
+      <div class="flex flex-wrap gap-3 items-center justify-between">
+        <div class="flex flex-wrap gap-2 flex-1">
+          <div class="relative">
+            <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style="color:#9BA3AF;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input id="srchQ" type="text" placeholder="Cari No.Ahli / Syarikat / PIC / Telefon..."
+                   onkeyup="filterTable()"
+                   class="inp" style="padding-left:2.25rem;min-width:260px;">
+          </div>
+          <select id="srchStatus" onchange="filterTable()" class="inp" style="width:auto;">
+            <option value="">Semua Status</option>
+            <option>Hadir</option>
+            <option>Tidak Hadir</option>
+            <option>Belum Dihubungi</option>
+            <option>Lain-lain</option>
+          </select>
+          <select id="srchDaerah" onchange="filterTable()" class="inp" style="width:auto;">
+            <option value="">Semua Daerah</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-3">
+          <span id="rowCount" class="text-xs font-medium" style="color:#9BA3AF;"></span>
+          <button onclick="doPrint()"
+                  style="background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:0.8rem;padding:0.5rem 1rem;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;transition:background .15s;"
+                  onmouseover="this.style.background='var(--navy-light)'"
+                  onmouseout="this.style.background='var(--navy)'">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+            Cetak
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm" id="mainTable">
+          <thead style="background:var(--navy);color:#fff;">
+            <tr id="thRow"></tr>
+          </thead>
+          <tbody id="tbBody">
+            <tr>
+              <td colspan="10" class="text-center py-14" style="color:#9BA3AF;">
+                <div class="spinner spinner-dark mx-auto mb-3"></div>
+                <p>Memuatkan data...</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── ADMIN TAB ─── -->
+  <div id="tabAdmin" class="hidden max-w-screen-2xl mx-auto px-4 py-6 fade-up">
+
+    <!-- Sub-tab buttons -->
+    <div class="flex gap-2 mb-6 no-print">
+      <button id="atMesyuarat" onclick="showAdminSub('Mesyuarat')"
+              class="px-4 py-2 text-sm font-semibold rounded-lg transition flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        Urus Mesyuarat
+      </button>
+      <button id="atPengguna" onclick="showAdminSub('Pengguna')"
+              class="px-4 py-2 text-sm font-semibold rounded-lg transition flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Urus Pengguna
+      </button>
+      <button id="atGDrive" onclick="showAdminSub('GDrive')"
+              class="px-4 py-2 text-sm font-semibold rounded-lg transition flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+        Google Drive
+      </button>
+    </div>
+
+    <!-- Mesyuarat sub -->
+    <div id="asub-Mesyuarat">
+      <div class="grid grid-cols-1 lg:grid-cols-5 gap-5">
+
+        <!-- Create form -->
+        <div class="lg:col-span-2 card p-6">
+          <p class="section-title">Tambah Baru</p>
+          <h3 class="font-bold text-gray-800 mb-5" style="font-family:'Outfit',sans-serif;font-size:1.1rem;">Cipta Mesyuarat</h3>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color:#6B7280;">ID Mesyuarat *</label>
+              <input id="fMeetId" type="text" placeholder="cth: MAT-2027" class="inp">
+              <p class="text-xs mt-1" style="color:#9BA3AF;">Huruf besar, tiada ruang. Contoh: MAT-2027</p>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color:#6B7280;">Nama Penuh Mesyuarat *</label>
+              <input id="fMeetNama" type="text" placeholder="Mesyuarat Agung Tahunan DPMM Negeri Johor 2027" class="inp">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color:#6B7280;">Tarikh</label>
+                <input id="fMeetTarikh" type="date" class="inp">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color:#6B7280;">Tempat</label>
+                <input id="fMeetTempat" type="text" placeholder="Johor Bahru" class="inp">
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color:#6B7280;">
+                Link Folder Google Drive
+                <span class="normal-case font-normal ml-1" style="color:#9BA3AF;">(jika manual / auto gagal)</span>
+              </label>
+              <input id="fMeetDrive" type="text" placeholder="https://drive.google.com/drive/folders/..." class="inp">
+            </div>
+            <div id="autoFolderNote" class="hidden rounded-lg p-3 text-sm font-medium" style="background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;">
+              ✅ Google Drive disambungkan. Folder akan dicipta secara automatik.
+            </div>
+            <button onclick="createMeeting()" id="btnCreateMeet" class="btn-primary w-full py-3 justify-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Cipta Mesyuarat &amp; Jana Rekod
+            </button>
+          </div>
+        </div>
+
+        <!-- Meeting list -->
+        <div class="lg:col-span-3 card p-6">
+          <p class="section-title">Rekod Aktif</p>
+          <h3 class="font-bold text-gray-800 mb-5" style="font-family:'Outfit',sans-serif;font-size:1.1rem;">Senarai Semua Mesyuarat</h3>
+          <div id="meetList" class="space-y-3">
+            <p class="text-sm" style="color:#9BA3AF;">Memuatkan...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pengguna sub -->
+    <div id="asub-Pengguna" class="hidden">
+      <div class="card overflow-hidden">
+        <div class="p-5 border-b" style="background:var(--off-white);">
+          <p class="section-title">Direktori</p>
+          <h3 class="font-bold text-gray-800" style="font-family:'Outfit',sans-serif;">Senarai Pengguna Berdaftar</h3>
+          <p class="text-xs mt-0.5" style="color:#9BA3AF;">Pengguna yang boleh log masuk ke sistem ini</p>
+        </div>
+        <table class="w-full text-sm">
+          <thead style="background:var(--navy);">
+            <tr>
+              <th class="px-5 py-3 text-left text-xs font-semibold text-white" style="letter-spacing:.05em;">ID / Emel</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold text-white" style="letter-spacing:.05em;">Nama</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold text-white" style="letter-spacing:.05em;">Peranan</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold text-white" style="letter-spacing:.05em;">Status</th>
+            </tr>
+          </thead>
+          <tbody id="userBody">
+            <tr><td colspan="4" class="text-center py-10" style="color:#9BA3AF;">Memuatkan...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Google Drive sub -->
+    <div id="asub-GDrive" class="hidden">
+      <div class="card p-6 max-w-lg">
+        <p class="section-title">Integrasi</p>
+        <h3 class="font-bold text-gray-800 mb-5" style="font-family:'Outfit',sans-serif;font-size:1.1rem;">Tetapan Google Drive</h3>
+        <div class="space-y-4">
+          <div class="rounded-xl p-4 text-sm" style="background:#EEF2FF;border:1px solid #C7D2FE;">
+            <p class="font-semibold mb-2" style="color:#3730A3;">📋 Cara Guna</p>
+            <ol class="list-decimal list-inside space-y-1 text-xs" style="color:#4338CA;">
+              <li>Klik butang di bawah untuk log masuk Google</li>
+              <li>Benarkan akses ke Google Drive</li>
+              <li>Sistem akan cipta folder automatik apabila mesyuarat baru dibuat</li>
+              <li>Anda hanya perlu log masuk Google sekali per sesi</li>
+            </ol>
+          </div>
+
+          <div id="driveStatus" class="p-3 rounded-lg text-sm">
+            <span style="color:#9BA3AF;">⚪ Status: Belum disambungkan</span>
+          </div>
+
+          <button onclick="authorizeGoogle()" id="btnGoogleAuth"
+                  class="flex items-center gap-3 w-full px-5 py-3 rounded-xl transition"
+                  style="border:2px solid #E2E8F0;background:#fff;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;"
+                  onmouseover="this.style.borderColor='#4285F4';this.style.background='#F8FBFF'"
+                  onmouseout="this.style.borderColor='#E2E8F0';this.style.background='#fff'">
+            <svg class="w-5 h-5" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            <span class="font-semibold text-sm" style="color:#374151;">Log masuk dengan Google</span>
+          </button>
+
+          <div class="rounded-lg p-3 text-xs" style="background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;">
+            <strong>⚠️ Nota:</strong> Masukkan Google OAuth Client ID dalam kod (baris GOOGLE_CLIENT_ID) sebelum ciri ini berfungsi.
+            Arahan: <a href="https://console.cloud.google.com" target="_blank" style="text-decoration:underline;">console.cloud.google.com</a>
+            → APIs &amp; Services → Credentials → Create OAuth 2.0 Client ID
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end mainApp -->
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  STATUS MODAL                                          -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="statusModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(13,31,60,0.65);backdrop-filter:blur(4px);">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md" style="box-shadow:0 25px 60px rgba(13,31,60,0.3);">
+    <div class="p-5 border-b" style="border-color:#E2E8F4;">
+      <h3 class="font-bold text-gray-800" style="font-family:'Outfit',sans-serif;">Kemaskini Status Kehadiran</h3>
+      <p id="modalLabel" class="text-sm font-medium mt-0.5" style="color:var(--red);"></p>
+    </div>
+    <div class="p-5 space-y-5">
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wider mb-3" style="color:#6B7280;">Pilih Status</label>
+        <div class="grid grid-cols-2 gap-2.5">
+          <button onclick="pickStatus('Hadir')" id="ps-Hadir"
+                  class="stat-btn py-3 px-3 rounded-xl border-2 text-sm font-semibold"
+                  style="border-color:#E2E8F4;color:#4A5568;">
+            <div class="text-lg mb-0.5">✅</div>
+            Hadir
+          </button>
+          <button onclick="pickStatus('Tidak Hadir')" id="ps-Tidak Hadir"
+                  class="stat-btn py-3 px-3 rounded-xl border-2 text-sm font-semibold"
+                  style="border-color:#E2E8F4;color:#4A5568;">
+            <div class="text-lg mb-0.5">❌</div>
+            Tidak Hadir
+          </button>
+          <button onclick="pickStatus('Belum Dihubungi')" id="ps-Belum Dihubungi"
+                  class="stat-btn py-3 px-3 rounded-xl border-2 text-sm font-semibold"
+                  style="border-color:#E2E8F4;color:#4A5568;">
+            <div class="text-lg mb-0.5">📞</div>
+            Belum Dihubungi
+          </button>
+          <button onclick="pickStatus('Lain-lain')" id="ps-Lain-lain"
+                  class="stat-btn py-3 px-3 rounded-xl border-2 text-sm font-semibold"
+                  style="border-color:#E2E8F4;color:#4A5568;">
+            <div class="text-lg mb-0.5">📝</div>
+            Lain-lain
+          </button>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color:#6B7280;">
+          Catatan / Sebab
+          <span id="catatanReq" class="hidden normal-case ml-1" style="color:var(--red);font-weight:600;">*Wajib untuk Lain-lain</span>
+        </label>
+        <textarea id="modalCatatan" rows="3" placeholder="Masukkan catatan jika perlu..."
+                  class="inp resize-none"></textarea>
+      </div>
+    </div>
+    <div class="p-5 border-t flex gap-3" style="border-color:#E2E8F4;">
+      <button onclick="closeModal()" class="btn-ghost flex-1 py-2.5 text-center">Batal</button>
+      <button onclick="saveStatus()" class="btn-primary flex-1 py-2.5 justify-center">Simpan Status</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  TOAST NOTIFICATION                                    -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="toast" class="hidden fixed bottom-5 right-5 z-50 text-white text-sm px-5 py-3 no-print"
+     style="border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.25);max-width:320px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:500;">
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  JAVASCRIPT  (logic unchanged, only style updates)     -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<script>
+const SUPABASE_URL = 'https://lzoloupwtqmjyupvofhh.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6b2xvdXB3dHFtanl1cHZvZmhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NTMxMTEsImV4cCI6MjA4ODUyOTExMX0.tBcGc6KfPyjUmJngbLTBHv-GZkSoSoyWGXwlXFZ0ShE';
+const GOOGLE_CID   = 'YOUR_GOOGLE_CLIENT_ID_HERE';
+const MAIN_FOLDER  = 'Sistem Pengurusan Mesyuarat DPMM Johor';
+
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let user = null, meeting = null, members = [], kehadiran = [], merged = [], filtered = [];
+let editNoAhli = '', selStatus = '', gToken = null, gapiReady = false, gisReady = false, tokenClient = null;
+
+const isAdmin = () => user && user.peranan !== 'ajk';
+
+// ── Login / Logout ──
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('lgPw').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
+  document.getElementById('lgId').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
+});
+
+async function doLogin() {
+  const id = document.getElementById('lgId').value.trim();
+  const pw = document.getElementById('lgPw').value.trim();
+  const errEl = document.getElementById('loginErr');
+  const btn   = document.getElementById('lgBtn');
+  errEl.classList.add('hidden');
+  if (!id || !pw) { setLoginErr('Sila masukkan ID dan kata laluan.'); return; }
+  btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;"></div>&nbsp;Mengesahkan...';
+  btn.disabled = true;
+  try {
+    const { data, error } = await db.from('DPMM_USERS').select('user_id,nama,peranan,aktif,kata_laluan').eq('user_id', id).single();
+    if (error || !data)      { setLoginErr('ID pengguna tidak dijumpai.'); return; }
+    if (!data.aktif)         { setLoginErr('Akaun tidak aktif. Hubungi pentadbir.'); return; }
+    if (data.kata_laluan !== pw) { setLoginErr('Kata laluan tidak betul.'); return; }
+    user = { user_id: data.user_id, nama: data.nama, peranan: data.peranan };
+    await bootApp();
+  } catch (e) {
+    setLoginErr('Ralat sambungan. Cuba semula.');
+    console.error(e);
+  } finally {
+    btn.innerHTML = 'Log Masuk';
+    btn.disabled = false;
+  }
+}
+function setLoginErr(msg) {
+  const el = document.getElementById('loginErr');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+function doLogout() {
+  user = meeting = null;
+  members = kehadiran = merged = filtered = [];
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('mainApp').classList.add('hidden');
+  document.getElementById('lgId').value = '';
+  document.getElementById('lgPw').value = '';
+}
+
+// ── Boot ──
+async function bootApp() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  document.getElementById('hdrName').textContent = user.nama;
+  if (isAdmin()) {
+    document.getElementById('hdrBadge').textContent = 'Admin';
+    document.getElementById('hdrBadge').style.cssText = 'background:var(--gold);color:var(--navy);font-size:.7rem;padding:.2rem .6rem;border-radius:999px;font-weight:700;';
+    document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+  } else {
+    document.getElementById('hdrBadge').textContent = 'AJK / Staf';
+    document.getElementById('hdrBadge').style.cssText = 'background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.8);font-size:.7rem;padding:.2rem .6rem;border-radius:999px;font-weight:600;';
+    document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+  }
+  await loadMembers();
+  await loadMeetings();
+  showTab('dash');
+}
+
+// ── Members ──
+async function loadMembers() {
+  const { data } = await db.from('AHLI DPMM JOHOR').select('NO_AHLI,NAMA_AHLI,NAMA,NO_HP,DAERAH,JAWATAN,STATUS').order('NAMA_AHLI');
+  if (data) {
+    members = data;
+    const daerahs = [...new Set(data.map(m => m.DAERAH).filter(Boolean))].sort();
+    const sel = document.getElementById('srchDaerah');
+    sel.innerHTML = '<option value="">Semua Daerah</option>';
+    daerahs.forEach(d => sel.innerHTML += `<option>${d}</option>`);
+  }
+}
+
+// ── Meetings ──
+async function loadMeetings() {
+  const { data } = await db.from('DPMM_MESYUARAT').select('*').order('dibuat_pada', { ascending: false });
+  if (!data || data.length === 0) {
+    document.getElementById('meetSel').innerHTML = '<option>Tiada mesyuarat</option>';
+    return;
+  }
+  const sel = document.getElementById('meetSel');
+  sel.innerHTML = '';
+  data.forEach(m => {
+    const o = document.createElement('option');
+    o.value = m.mesyuarat_id;
+    o.textContent = m.mesyuarat_id;
+    if (m.aktif) o.selected = true;
+    sel.appendChild(o);
+  });
+  meeting = data.find(m => m.aktif) || data[0];
+  if (meeting) sel.value = meeting.mesyuarat_id;
+  renderMeetList(data);
+  await loadKehadiran();
+}
+
+async function onMeetingChange() {
+  const id = document.getElementById('meetSel').value;
+  const { data } = await db.from('DPMM_MESYUARAT').select('*').eq('mesyuarat_id', id).single();
+  if (data) { meeting = data; await loadKehadiran(); }
+}
+
+function renderMeetList(list) {
+  const el = document.getElementById('meetList');
+  if (!el) return;
+  el.innerHTML = list.map(m => `
+    <div class="meet-item ${m.aktif ? 'active' : ''}">
+      <div class="flex justify-between items-start gap-3">
+        <div class="flex-1 min-w-0">
+          <p class="font-semibold text-sm text-gray-800 truncate">${m.nama}</p>
+          <p class="text-xs mt-0.5 flex flex-wrap gap-2" style="color:#9BA3AF;">
+            <span class="font-mono font-bold" style="color:var(--navy);">${m.mesyuarat_id}</span>
+            ${m.tarikh ? '<span>· ' + fmtDate(m.tarikh) + '</span>' : ''}
+            ${m.tempat ? '<span>· ' + m.tempat + '</span>' : ''}
+          </p>
+          ${m.gdrive_folder_url
+            ? `<a href="${m.gdrive_folder_url}" target="_blank" class="text-xs mt-1 inline-block" style="color:var(--navy-light);text-decoration:underline;">📁 Buka Folder Drive</a>`
+            : `<span class="text-xs mt-1 inline-block" style="color:#CBD5E1;">Folder Drive: Belum disediakan</span>`}
+        </div>
+        <div class="flex flex-col gap-1.5 shrink-0 items-end">
+          ${m.aktif ? '<span style="background:#D1FAE5;color:#065F46;font-size:.7rem;padding:.2rem .6rem;border-radius:999px;font-weight:700;">Aktif</span>' : ''}
+          ${!m.aktif ? `<button onclick="setActive('${m.mesyuarat_id}')" style="background:var(--off-white);border:1px solid #E2E8F4;color:var(--navy);font-size:.7rem;padding:.2rem .6rem;border-radius:6px;cursor:pointer;font-weight:600;transition:background .15s;" onmouseover="this.style.background='#E2E8F4'" onmouseout="this.style.background='var(--off-white)'">Set Aktif</button>` : ''}
+          ${!m.gdrive_folder_url ? `<button onclick="doSetupDrive('${m.mesyuarat_id}')" style="background:#EEF2FF;border:1px solid #C7D2FE;color:#4338CA;font-size:.7rem;padding:.2rem .6rem;border-radius:6px;cursor:pointer;font-weight:600;">📁 Jana Folder</button>` : ''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function setActive(meetId) {
+  await db.from('DPMM_MESYUARAT').update({ aktif: false }).neq('mesyuarat_id', '__none__');
+  await db.from('DPMM_MESYUARAT').update({ aktif: true }).eq('mesyuarat_id', meetId);
+  toast('✅ Mesyuarat aktif dikemaskini');
+  await loadMeetings();
+}
+
+// ── Kehadiran ──
+async function loadKehadiran() {
+  if (!meeting) return;
+  const { data } = await db.from('DPMM_KEHADIRAN').select('*').eq('mesyuarat_id', meeting.mesyuarat_id);
+  kehadiran = data || [];
+  buildMerged();
+  updateDashboard();
+  renderTable();
+}
+function buildMerged() {
+  const kmap = {};
+  kehadiran.forEach(k => { kmap[k.no_ahli] = k; });
+  merged = members.map(m => {
+    const k = kmap[m.NO_AHLI] || { status: 'Belum Dihubungi', catatan: null, dikemaskini_oleh: null, dikemaskini_pada: null };
+    return { ...m, ...k };
+  });
+  filtered = [...merged];
+}
+
+// ── Dashboard ──
+function updateDashboard() {
+  if (!meeting) return;
+  document.getElementById('dshName').textContent = meeting.nama || '';
+  const tEl = document.getElementById('dshTarikh');
+  const pEl = document.getElementById('dshTempat');
+  tEl.querySelector('span').textContent = meeting.tarikh ? fmtDate(meeting.tarikh) : '';
+  tEl.style.display = meeting.tarikh ? 'flex' : 'none';
+  pEl.querySelector('span').textContent = meeting.tempat || '';
+  pEl.style.display = meeting.tempat ? 'flex' : 'none';
+
+  if (meeting.gdrive_folder_url) {
+    document.getElementById('dshDriveLink').classList.remove('hidden');
+    document.getElementById('dshDriveLink').style.display = 'flex';
+    document.getElementById('dshDriveHint').classList.remove('hidden');
+    document.getElementById('dshNoDrive').classList.add('hidden');
+    document.getElementById('dshDriveLink').href = meeting.gdrive_folder_url;
+  } else {
+    document.getElementById('dshDriveLink').classList.add('hidden');
+    document.getElementById('dshDriveHint').classList.add('hidden');
+    document.getElementById('dshNoDrive').classList.remove('hidden');
+  }
+
+  const c = { Hadir: 0, 'Tidak Hadir': 0, 'Belum Dihubungi': 0, 'Lain-lain': 0 };
+  merged.forEach(r => { c[r.status] !== undefined ? c[r.status]++ : c['Lain-lain']++; });
+  const total = merged.length;
+  const pct = n => total > 0 ? Math.round(n / total * 100) : 0;
+
+  document.getElementById('cHadir').textContent = c['Hadir'];
+  document.getElementById('cTidak').textContent = c['Tidak Hadir'];
+  document.getElementById('cBelum').textContent = c['Belum Dihubungi'];
+  document.getElementById('cLain').textContent  = c['Lain-lain'];
+  document.getElementById('cTotal').textContent = total;
+
+  [['Hadir','Hadir'],['Tidak','Tidak Hadir'],['Belum','Belum Dihubungi'],['Lain','Lain-lain']].forEach(([k, key]) => {
+    const p = pct(c[key]);
+    document.getElementById('b' + k).style.width = p + '%';
+    document.getElementById('p' + k).textContent  = p + '%';
+  });
+  document.getElementById('pgHadir').style.width = pct(c['Hadir']) + '%';
+  document.getElementById('pgTidak').style.width = pct(c['Tidak Hadir']) + '%';
+  document.getElementById('pgLain').style.width  = pct(c['Lain-lain']) + '%';
+  document.getElementById('pgBelum').style.width = pct(c['Belum Dihubungi']) + '%';
+}
+
+// ── Table ──
+const ADMIN_HEADERS = ['Bil','No. Ahli','Nama Syarikat','Nama PIC','No. HP','Daerah','Jawatan','Status','Catatan','Dikemaskini','Tindakan'];
+const AJK_HEADERS   = ['Bil','No. Ahli','Nama Syarikat','Nama PIC','No. HP','Daerah','Status','Catatan','Tindakan'];
+
+function renderTable() {
+  const headers = isAdmin() ? ADMIN_HEADERS : AJK_HEADERS;
+  document.getElementById('thRow').innerHTML = headers
+    .map(h => `<th style="padding:.75rem 1rem;text-align:left;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;background:var(--navy);color:rgba(255,255,255,0.85);">${h}</th>`)
+    .join('');
+
+  const tbody = document.getElementById('tbBody');
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:4rem;color:#9BA3AF;">
+      <svg style="width:40px;height:40px;margin:0 auto 12px;display:block;color:#D1D5DB;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      Tiada rekod dijumpai
+    </td></tr>`;
+    document.getElementById('rowCount').textContent = '0 ahli';
+    return;
+  }
+  document.getElementById('rowCount').textContent = `${filtered.length} ahli`;
+
+  tbody.innerHTML = filtered.map((r, i) => {
+    const badge   = badgeClass(r.status);
+    const noAhli  = esc(r.NO_AHLI || '');
+    const nama    = esc(r.NAMA_AHLI || '-');
+    const catatan = esc(r.catatan || '');
+    const phone   = cleanPhone(r.NO_HP);
+    const waBtn   = phone
+      ? `<button onclick="openWA('${phone}')" title="WhatsApp ${r.NO_HP}" style="background:#25D366;color:#fff;border:none;border-radius:6px;padding:.4rem .6rem;cursor:pointer;font-size:.75rem;transition:opacity .15s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">💬</button>`
+      : '';
+    const editBtn = `<button onclick="openModal('${noAhli}','${nama}','${r.status}','${catatan}')" style="background:var(--navy);color:#fff;border:none;border-radius:6px;padding:.4rem .6rem;cursor:pointer;font-size:.75rem;transition:opacity .15s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">✏️</button>`;
+    const adminCols = isAdmin()
+      ? `<td style="padding:.65rem 1rem;font-size:.75rem;color:#9BA3AF;">${r.JAWATAN || '-'}</td>
+         <td style="padding:.65rem 1rem;font-size:.7rem;color:#9BA3AF;">${r.dikemaskini_oleh ? shortId(r.dikemaskini_oleh) + (r.dikemaskini_pada ? '<br><span style="color:#CBD5E1;">' + fmtDT(r.dikemaskini_pada) + '</span>' : '') : '-'}</td>`
+      : '';
+    return `<tr class="mrow" style="border-bottom:1px solid #F1F5F9;">
+      <td style="padding:.65rem 1rem;font-size:.75rem;color:#9BA3AF;">${i + 1}</td>
+      <td style="padding:.65rem 1rem;"><span style="font-family:monospace;font-size:.8rem;font-weight:700;color:var(--red);">${r.NO_AHLI || '-'}</span></td>
+      <td style="padding:.65rem 1rem;font-size:.85rem;font-weight:600;color:var(--text-dark);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(r.NAMA_AHLI||'')}">${r.NAMA_AHLI || '-'}</td>
+      <td style="padding:.65rem 1rem;font-size:.85rem;color:#4A5568;white-space:nowrap;">${r.NAMA || '-'}</td>
+      <td style="padding:.65rem 1rem;font-size:.8rem;color:#6B7280;white-space:nowrap;">${r.NO_HP || '-'}</td>
+      <td style="padding:.65rem 1rem;font-size:.8rem;color:#6B7280;white-space:nowrap;">${r.DAERAH || '-'}</td>
+      ${adminCols}
+      <td style="padding:.65rem 1rem;white-space:nowrap;"><span style="font-size:.75rem;padding:.2rem .7rem;border-radius:999px;font-weight:600;" class="${badge}">${r.status}</span></td>
+      <td style="padding:.65rem 1rem;font-size:.8rem;color:#9BA3AF;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(r.catatan||'')}">${r.catatan || '—'}</td>
+      <td style="padding:.65rem 1rem;"><div style="display:flex;gap:5px;">${editBtn}${waBtn}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+function badgeClass(s) {
+  return s === 'Hadir' ? 'badge-hadir' : s === 'Tidak Hadir' ? 'badge-tidak' : s === 'Belum Dihubungi' ? 'badge-belum' : 'badge-lain';
+}
+
+// ── Filters ──
+function filterTable() {
+  const q      = document.getElementById('srchQ').value.toLowerCase();
+  const status = document.getElementById('srchStatus').value;
+  const daerah = document.getElementById('srchDaerah').value;
+  filtered = merged.filter(r => {
+    const mSearch = !q || (r.NO_AHLI||'').toLowerCase().includes(q) || (r.NAMA_AHLI||'').toLowerCase().includes(q) || (r.NAMA||'').toLowerCase().includes(q) || (r.NO_HP||'').includes(q);
+    return mSearch && (!status || r.status === status) && (!daerah || r.DAERAH === daerah);
+  });
+  renderTable();
+}
+
+// ── Modal ──
+function openModal(noAhli, namaSyarikat, currentStatus, catatan) {
+  editNoAhli = noAhli;
+  selStatus  = currentStatus;
+  document.getElementById('modalLabel').textContent = `[${noAhli}] ${namaSyarikat}`;
+  document.getElementById('modalCatatan').value     = catatan || '';
+  document.getElementById('catatanReq').classList.add('hidden');
+  ['Hadir','Tidak Hadir','Belum Dihubungi','Lain-lain'].forEach(s => {
+    const b = document.getElementById('ps-' + s);
+    if (b) b.style.cssText = 'border-color:#E2E8F4;color:#4A5568;background:#fff;';
+  });
+  pickStatus(currentStatus);
+  document.getElementById('statusModal').classList.remove('hidden');
+}
+function pickStatus(s) {
+  selStatus = s;
+  ['Hadir','Tidak Hadir','Belum Dihubungi','Lain-lain'].forEach(x => {
+    const b = document.getElementById('ps-' + x);
+    if (b) b.style.cssText = 'border-color:#E2E8F4;color:#4A5568;background:#fff;';
+  });
+  const styles = {
+    'Hadir':           'border-color:#10B981;background:#D1FAE5;color:#065F46;',
+    'Tidak Hadir':     'border-color:#EF4444;background:#FEE2E2;color:#991B1B;',
+    'Belum Dihubungi': 'border-color:#F59E0B;background:#FEF3C7;color:#92400E;',
+    'Lain-lain':       'border-color:#64748B;background:#F1F5F9;color:#475569;'
+  };
+  const b = document.getElementById('ps-' + s);
+  if (b) b.style.cssText = styles[s] || '';
+  const req = document.getElementById('catatanReq');
+  s === 'Lain-lain' ? req.classList.remove('hidden') : req.classList.add('hidden');
+}
+function closeModal() {
+  document.getElementById('statusModal').classList.add('hidden');
+  editNoAhli = ''; selStatus = '';
+}
+async function saveStatus() {
+  if (!selStatus) { toast('⚠️ Pilih status dahulu.', 'err'); return; }
+  if (!meeting)   { toast('⚠️ Tiada mesyuarat dipilih.', 'err'); return; }
+  const catatan = document.getElementById('modalCatatan').value.trim();
+  if (selStatus === 'Lain-lain' && !catatan) { toast('⚠️ Catatan wajib diisi untuk Lain-lain.', 'err'); return; }
+  const { error } = await db.from('DPMM_KEHADIRAN').upsert({
+    mesyuarat_id: meeting.mesyuarat_id, no_ahli: editNoAhli, status: selStatus,
+    catatan: catatan || null, dikemaskini_oleh: user.user_id, dikemaskini_pada: new Date().toISOString()
+  }, { onConflict: 'mesyuarat_id,no_ahli' });
+  if (error) { toast('❌ Gagal simpan: ' + error.message, 'err'); return; }
+  const idx = merged.findIndex(r => r.NO_AHLI === editNoAhli);
+  if (idx >= 0) { merged[idx].status = selStatus; merged[idx].catatan = catatan || null; merged[idx].dikemaskini_oleh = user.user_id; merged[idx].dikemaskini_pada = new Date().toISOString(); }
+  const ki = kehadiran.findIndex(k => k.no_ahli === editNoAhli);
+  if (ki >= 0) { kehadiran[ki].status = selStatus; kehadiran[ki].catatan = catatan || null; }
+  else kehadiran.push({ mesyuarat_id: meeting.mesyuarat_id, no_ahli: editNoAhli, status: selStatus, catatan });
+  closeModal(); filterTable(); updateDashboard();
+  toast(`✅ Status [${editNoAhli}] → ${selStatus}`);
+}
+
+// ── WhatsApp ──
+function openWA(phone) { if (!phone) { toast('⚠️ Tiada nombor telefon.', 'err'); return; } window.open('https://wasap.my/' + phone, '_blank'); }
+function cleanPhone(p) {
+  if (!p) return '';
+  p = p.replace(/[\s\-\(\)\.]/g, '');
+  if (p.startsWith('+')) p = p.slice(1);
+  if (p.startsWith('0')) p = '60' + p.slice(1);
+  if (!p.startsWith('6')) p = '60' + p;
+  return p;
+}
+
+// ── Create Meeting ──
+async function createMeeting() {
+  const meetId = document.getElementById('fMeetId').value.trim().toUpperCase().replace(/\s+/g, '-');
+  const nama   = document.getElementById('fMeetNama').value.trim();
+  const tarikh = document.getElementById('fMeetTarikh').value;
+  const tempat = document.getElementById('fMeetTempat').value.trim();
+  const driveM = document.getElementById('fMeetDrive').value.trim();
+  if (!meetId || !nama) { toast('⚠️ ID dan Nama Mesyuarat wajib diisi.', 'err'); return; }
+  const btn = document.getElementById('btnCreateMeet');
+  btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;"></div>&nbsp;Mencipta...';
+  btn.disabled = true;
+  let driveUrl = driveM || null, driveId = null;
+  if (!driveM && gToken) {
+    try { const res = await createDriveFolder(meetId); driveUrl = res.url; driveId = res.id; toast('📁 Folder Drive dijana: ' + meetId); }
+    catch (e) { console.warn('Drive folder failed:', e); }
+  }
+  const { error } = await db.from('DPMM_MESYUARAT').insert({
+    mesyuarat_id: meetId, nama, tarikh: tarikh || null, tempat: tempat || null,
+    gdrive_folder_id: driveId, gdrive_folder_url: driveUrl, aktif: false,
+    dibuat_oleh: user.user_id, dibuat_pada: new Date().toISOString(), dikemaskini_pada: new Date().toISOString()
+  });
+  if (error) {
+    toast('❌ ' + (error.message.includes('unique') ? 'ID Mesyuarat sudah wujud.' : error.message), 'err');
+    btn.innerHTML = 'Cipta Mesyuarat &amp; Jana Rekod'; btn.disabled = false; return;
+  }
+  const total = await seedAttendance(meetId);
+  toast(`✅ Mesyuarat ${meetId} dicipta! ${total} rekod dijana.`);
+  ['fMeetId','fMeetNama','fMeetTarikh','fMeetTempat','fMeetDrive'].forEach(id => { document.getElementById(id).value = ''; });
+  btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Cipta Mesyuarat &amp; Jana Rekod';
+  btn.disabled = false;
+  await loadMeetings();
+}
+async function seedAttendance(meetId) {
+  const { data } = await db.from('AHLI DPMM JOHOR').select('NO_AHLI').not('NO_AHLI', 'is', null);
+  if (!data) return 0;
+  const records = data.map(m => ({ mesyuarat_id: meetId, no_ahli: m.NO_AHLI, status: 'Belum Dihubungi', dikemaskini_oleh: 'Sistem - Auto Seed', dikemaskini_pada: new Date().toISOString(), created_at: new Date().toISOString() }));
+  for (let i = 0; i < records.length; i += 50) { await db.from('DPMM_KEHADIRAN').upsert(records.slice(i, i + 50), { onConflict: 'mesyuarat_id,no_ahli' }); }
+  return records.length;
+}
+
+// ── Users ──
+async function loadUsers() {
+  const { data } = await db.from('DPMM_USERS').select('user_id,nama,peranan,aktif').order('id');
+  if (!data) return;
+  const roleLabel = { admin: '🔴 Pentadbir Utama', user: '🟡 Pentadbir', ajk: '🟢 AJK / Staf' };
+  document.getElementById('userBody').innerHTML = data.map(u => `
+    <tr style="border-bottom:1px solid #F1F5F9;" onmouseover="this.style.background='#F7F8FC'" onmouseout="this.style.background=''">
+      <td style="padding:.75rem 1.25rem;font-size:.85rem;font-family:monospace;color:#6B7280;">${u.user_id}</td>
+      <td style="padding:.75rem 1.25rem;font-size:.85rem;font-weight:600;color:var(--text-dark);">${u.nama}</td>
+      <td style="padding:.75rem 1.25rem;">
+        <span style="font-size:.75rem;padding:.2rem .7rem;border-radius:999px;font-weight:600;${u.peranan==='admin'?'background:#FEE2E2;color:#991B1B;':u.peranan==='ajk'?'background:#D1FAE5;color:#065F46;':'background:#FEF3C7;color:#92400E;'}">
+          ${roleLabel[u.peranan] || u.peranan}
+        </span>
+      </td>
+      <td style="padding:.75rem 1.25rem;">
+        <span style="font-size:.75rem;padding:.2rem .7rem;border-radius:999px;font-weight:600;${u.aktif?'background:#D1FAE5;color:#065F46;':'background:#FEE2E2;color:#991B1B;'}">
+          ${u.aktif ? 'Aktif' : 'Tidak Aktif'}
+        </span>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ── Google Drive ──
+function initGIS() {
+  if (GOOGLE_CID === 'YOUR_GOOGLE_CLIENT_ID_HERE') return;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CID,
+    scope: 'https://www.googleapis.com/auth/drive.file',
+    callback: (resp) => {
+      if (resp.error) { toast('❌ Google auth gagal: ' + resp.error, 'err'); return; }
+      gToken = resp.access_token;
+      gapi.client.setToken(resp);
+      setDriveStatus(true);
+      document.getElementById('autoFolderNote').classList.remove('hidden');
+      toast('✅ Google Drive disambungkan!');
+    }
+  });
+  gisReady = true;
+}
+function authorizeGoogle() {
+  if (GOOGLE_CID === 'YOUR_GOOGLE_CLIENT_ID_HERE') { toast('⚠️ Sila konfigurasi Google Client ID dahulu.', 'err'); return; }
+  if (!gisReady) { toast('⚠️ Google APIs belum siap. Cuba sebentar lagi.', 'err'); return; }
+  tokenClient.requestAccessToken({ prompt: '' });
+}
+function setDriveStatus(connected) {
+  const el = document.getElementById('driveStatus');
+  if (!el) return;
+  el.innerHTML = connected
+    ? `<span style="color:#059669;font-weight:600;">🟢 Disambungkan: ${user.user_id}</span>`
+    : '<span style="color:#9BA3AF;">⚪ Belum disambungkan</span>';
+}
+async function createDriveFolder(meetId) {
+  if (!gToken) throw new Error('Tiada token Google');
+  const mainId = await findOrCreateFolder(MAIN_FOLDER, 'root');
+  const subId  = await findOrCreateFolder(meetId, mainId);
+  await fetch(`https://www.googleapis.com/drive/v3/files/${subId}/permissions`, {
+    method: 'POST', headers: { 'Authorization': 'Bearer ' + gToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role: 'writer', type: 'anyone' })
+  });
+  return { id: subId, url: `https://drive.google.com/drive/folders/${subId}` };
+}
+async function findOrCreateFolder(name, parentId) {
+  const q = `name='${name}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)`, { headers: { 'Authorization': 'Bearer ' + gToken } });
+  const json = await res.json();
+  if (json.files && json.files.length > 0) return json.files[0].id;
+  const created = await fetch('https://www.googleapis.com/drive/v3/files?fields=id', {
+    method: 'POST', headers: { 'Authorization': 'Bearer ' + gToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, mimeType: 'application/vnd.google-apps.folder', parents: [parentId] })
+  });
+  return (await created.json()).id;
+}
+async function doSetupDrive(meetId) {
+  if (!gToken) { toast('⚠️ Sila sambungkan Google Drive dahulu (Tab Google Drive).', 'err'); return; }
+  try {
+    toast('⏳ Mencipta folder Drive...');
+    const res = await createDriveFolder(meetId);
+    await db.from('DPMM_MESYUARAT').update({ gdrive_folder_id: res.id, gdrive_folder_url: res.url }).eq('mesyuarat_id', meetId);
+    toast(`✅ Folder Drive dijana untuk ${meetId}!`);
+    await loadMeetings();
+  } catch (e) { toast('❌ Gagal: ' + e.message, 'err'); }
+}
+
+// ── Print ──
+function doPrint() {
+  const c = { Hadir: 0, 'Tidak Hadir': 0, 'Belum Dihubungi': 0, 'Lain-lain': 0 };
+  filtered.forEach(r => c[r.status] !== undefined ? c[r.status]++ : c['Lain-lain']++);
+  const total = filtered.length;
+  const adminTH = isAdmin()
+    ? '<th style="background:#0D1F3C;color:#fff;padding:5px 8px;text-align:left">Jawatan</th><th style="background:#0D1F3C;color:#fff;padding:5px 8px;text-align:left">Dikemaskini</th>' : '';
+  const rows = filtered.map((r, i) => {
+    const adminTD = isAdmin()
+      ? `<td style="padding:4px 8px;border-bottom:1px solid #e5e7eb">${r.JAWATAN || '-'}</td><td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;font-size:9px">${r.dikemaskini_oleh ? shortId(r.dikemaskini_oleh) : '-'}</td>` : '';
+    const sc = r.status === 'Hadir' ? '#059669' : r.status === 'Tidak Hadir' ? '#DC2626' : r.status === 'Belum Dihubungi' ? '#D97706' : '#64748B';
+    return `<tr>
+      <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb">${i + 1}</td>
+      <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;font-family:monospace;font-weight:bold;color:#C0392B">${r.NO_AHLI || '-'}</td>
+      <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb">${r.NAMA_AHLI || '-'}</td>
+      <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb">${r.NAMA || '-'}</td>
+      <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb">${r.NO_HP || '-'}</td>
+      <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb">${r.DAERAH || '-'}</td>
+      ${adminTD}
+      <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;color:${sc};font-weight:bold">${r.status}</td>
+      <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb">${r.catatan || '-'}</td>
+    </tr>`;
+  }).join('');
+
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html><html><head>
+    <meta charset="UTF-8">
+    <title>Senarai Kehadiran — ${meeting?.mesyuarat_id}</title>
+    <style>
+      @page { size:A4 landscape; margin:1cm; }
+      body { font-family:Arial,sans-serif; font-size:10px; margin:0; }
+      .hdr { display:flex; align-items:center; gap:12px; border-bottom:3px solid #C0392B; padding-bottom:8px; margin-bottom:10px; }
+      .hdr-text h2 { font-size:13px; color:#0D1F3C; margin:0 0 2px; font-weight:800; }
+      .hdr-text h3 { font-size:11px; color:#555; margin:0; font-weight:normal; }
+      .kpi { display:flex; gap:16px; padding:6px 10px; background:#F0F4FC; border-radius:4px; margin-bottom:8px; border-left:4px solid #0D1F3C; }
+      .kpi-item { text-align:center; }
+      .kpi-num { font-size:18px; font-weight:bold; }
+      .kpi-lbl { font-size:9px; color:#666; }
+      table { width:100%; border-collapse:collapse; }
+      th { background:#0D1F3C; color:#fff; padding:5px 8px; text-align:left; font-size:10px; }
+      tr:nth-child(even) td { background:#F7F8FC; }
+      .footer { margin-top:8px; text-align:right; font-size:8px; color:#999; border-top:1px solid #eee; padding-top:4px; }
+    </style>
+  </head><body>
+    <div class="hdr">
+      <div class="hdr-text">
+        <h2>Senarai Kehadiran — Dewan Perniagaan Melayu Malaysia Negeri Johor</h2>
+        <h3>${meeting?.nama || ''} &nbsp;|&nbsp; Dicetak: ${new Date().toLocaleString('ms-MY')} &nbsp;|&nbsp; Oleh: ${user?.nama}</h3>
+      </div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-item"><div class="kpi-num" style="color:#059669">${c['Hadir']}</div><div class="kpi-lbl">✅ Hadir</div></div>
+      <div class="kpi-item"><div class="kpi-num" style="color:#DC2626">${c['Tidak Hadir']}</div><div class="kpi-lbl">❌ Tidak Hadir</div></div>
+      <div class="kpi-item"><div class="kpi-num" style="color:#D97706">${c['Belum Dihubungi']}</div><div class="kpi-lbl">📞 Belum Dihubungi</div></div>
+      <div class="kpi-item"><div class="kpi-num" style="color:#64748B">${c['Lain-lain']}</div><div class="kpi-lbl">📝 Lain-lain</div></div>
+      <div class="kpi-item"><div class="kpi-num">${total}</div><div class="kpi-lbl">📋 Jumlah</div></div>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Bil</th><th>No. Ahli</th><th>Nama Syarikat</th><th>Nama PIC</th>
+        <th>No. HP</th><th>Daerah</th>${adminTH}<th>Status</th><th>Catatan</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="footer">Sistem Pengurusan Mesyuarat DPMM Negeri Johor — Sulit &amp; Terhad</div>
+  </body></html>`);
+  w.document.close();
+  setTimeout(() => { w.focus(); w.print(); }, 600);
+}
+
+// ── Navigation ──
+function showTab(tab) {
+  ['dash','senarai','admin'].forEach(t => {
+    const el = document.getElementById('tab' + capitalize(t));
+    const nav = document.getElementById('nav' + capitalize(t));
+    if (el)  el.classList.add('hidden');
+    if (nav) nav.classList.remove('nav-tab-active');
+  });
+  document.getElementById('tab' + capitalize(tab)).classList.remove('hidden');
+  document.getElementById('nav' + capitalize(tab)).classList.add('nav-tab-active');
+  if (tab === 'admin') { showAdminSub('Mesyuarat'); loadUsers(); }
+  if (tab === 'senarai') renderTable();
+}
+function showAdminSub(sub) {
+  ['Mesyuarat','Pengguna','GDrive'].forEach(s => {
+    const content = document.getElementById('asub-' + s);
+    const btn     = document.getElementById('at' + s);
+    if (content) content.classList.add('hidden');
+    if (btn) btn.className = 'px-4 py-2 text-sm font-semibold rounded-lg transition flex items-center gap-2 admtab-inactive';
+  });
+  document.getElementById('asub-' + sub).classList.remove('hidden');
+  document.getElementById('at' + sub).className = 'px-4 py-2 text-sm font-semibold rounded-lg transition flex items-center gap-2 admtab-active';
+}
+
+// ── Utilities ──
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function esc(s) { return (s||'').replace(/'/g,"&#39;").replace(/"/g,"&quot;"); }
+function shortId(s) { return (s||'').split('@')[0]; }
+function fmtDate(d) { if (!d) return ''; return new Date(d).toLocaleDateString('ms-MY', { day:'2-digit', month:'long', year:'numeric' }); }
+function fmtDT(d) {
+  if (!d) return '';
+  const dt = new Date(d);
+  return dt.toLocaleDateString('ms-MY', { day:'2-digit', month:'2-digit', year:'numeric' }) + ' ' + dt.toLocaleTimeString('ms-MY', { hour:'2-digit', minute:'2-digit' });
+}
+let toastT;
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.cssText = `position:fixed;bottom:1.25rem;right:1.25rem;z-index:9999;color:#fff;font-size:.875rem;padding:.75rem 1.25rem;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.25);max-width:320px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:500;background:${type==='err'?'#C0392B':'#0D1F3C'};display:block;`;
+  clearTimeout(toastT);
+  toastT = setTimeout(() => { el.style.display = 'none'; }, 3500);
+}
+
+// ── Google callbacks ──
+function gapiLoaded() {
+  gapi.load('client', () => {
+    gapi.client.init({ discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] }).then(() => { gapiReady = true; });
+  });
+}
+function gisLoaded() { if (GOOGLE_CID !== 'YOUR_GOOGLE_CLIENT_ID_HERE') initGIS(); }
+window.addEventListener('load', () => { setTimeout(() => { if (typeof google !== 'undefined' && google.accounts) gisLoaded(); }, 1500); });
+</script>
+
+<script>function gapiLoadCallback() { gapiLoaded(); }</script>
+<script src="https://apis.google.com/js/api.js?onload=gapiLoadCallback" async defer></script>
+</body>
+</html>
