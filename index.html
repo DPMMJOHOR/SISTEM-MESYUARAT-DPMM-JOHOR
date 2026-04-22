@@ -314,8 +314,8 @@
           <img src="LogoBulat_DPMMNJ-02.png" alt="DPMM Johor"
                style="width:100%;height:100%;object-fit:contain;border-radius:50%;"
                onerror="this.style.display='none';document.getElementById('lgLogoFallback').style.display='flex'">
-          <div id="lgLogoFallback" style="display:none;width:80px;height:80px;background:var(--blue);border-radius:50%;align-items:center;justify-content:center;">
-            <span style="font-family:'Outfit',sans-serif;font-weight:900;color:#fff;font-size:1.6rem;">D</span>
+          <div id="lgLogoFallback" style="display:flex;width:96px;height:96px;background:linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%);border-radius:50%;align-items:center;justify-content:center;">
+            <span style="font-family:'Outfit',sans-serif;font-weight:900;color:#fff;font-size:2rem;">DPMM</span>
           </div>
         </div>
       </div>
@@ -358,10 +358,8 @@
 
       <!-- Logo + Brand -->
       <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
-        <div style="width:42px;height:42px;border-radius:50%;background:#fff;padding:3px;box-shadow:0 2px 8px rgba(0,0,0,0.15);flex-shrink:0;">
-          <img src="LogoBulat_DPMMNJ-02.png" alt="DPMM"
-               style="width:100%;height:100%;object-fit:contain;border-radius:50%;"
-               onerror="this.style.display='none'">
+        <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%);padding:3px;box-shadow:0 2px 8px rgba(0,0,0,0.15);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.7rem;font-family:'Outfit',sans-serif;">
+          D
         </div>
         <div>
           <div style="font-family:'Outfit',sans-serif;font-weight:800;color:#fff;font-size:.88rem;line-height:1.2;">Sistem Pengurusan Mesyuarat</div>
@@ -562,7 +560,7 @@
     </div>
 
     <!-- Table -->
-    <div class="card" style="overflow:hidden;">
+    <div class="card" style="overflow:hidden;margin-bottom:1.5rem;">
       <div style="overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;" id="mainTable">
           <thead>
@@ -576,6 +574,56 @@
           </tbody>
         </table>
       </div>
+    </div>
+
+    <!-- WhatsApp Templates Section -->
+    <div class="card" style="padding:1.5rem;">
+      <p class="sec-label">Mesej</p>
+      <h3 style="font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:700;color:var(--blue-dark);margin-bottom:1.25rem;">Template WhatsApp</h3>
+      
+      <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:1.25rem;align-items:start;">
+        <!-- Form -->
+        <div style="display:flex;flex-direction:column;gap:.875rem;">
+          <div>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Nama Template *</label>
+            <input id="waTplName" type="text" placeholder="cth: Jemputan Mesyuarat Biasa" class="inp">
+          </div>
+          <div>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Teks Mesej *</label>
+            <textarea id="waTplBody" rows="6" class="inp" placeholder="Tulis mesej WhatsApp di sini...&#10;&#10;Gunakan placeholder di bawah untuk data dinamik."></textarea>
+          </div>
+
+          <!-- Placeholder helper -->
+          <div>
+            <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);margin-bottom:4px;">Placeholder (klik untuk tambah)</p>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;">
+              <span class="ph-tag" onclick="insertPh('{nama_ahli}')">{nama_ahli}</span>
+              <span class="ph-tag" onclick="insertPh('{no_ahli}')">{no_ahli}</span>
+              <span class="ph-tag" onclick="insertPh('{tarikh}')">{tarikh}</span>
+              <span class="ph-tag" onclick="insertPh('{tempat}')">{tempat}</span>
+              <span class="ph-tag" onclick="insertPh('{nama_mesyuarat}')">{nama_mesyuarat}</span>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:.5rem;">
+            <button onclick="saveTpl()" class="btn btn-green" style="flex:1;justify-content:center;">
+              <span id="waTplSaveLbl">Simpan Template</span>
+            </button>
+            <button onclick="cancelEditTpl()" id="waTplCancelBtn" class="btn btn-white hidden" style="flex:1;justify-content:center;">Batal</button>
+          </div>
+        </div>
+
+        <!-- Template List -->
+        <div>
+          <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);margin-bottom:.75rem;">Senarai Template (<span id="tplCount">0</span>)</p>
+          <div id="waTplList" style="display:flex;flex-direction:column;gap:.5rem;max-height:300px;overflow-y:auto;">
+            <p style="font-size:.85rem;color:var(--text-faint);text-align:center;padding:1rem 0;">Belum ada template</p>
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="waTplId">
+      <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);margin:1rem 0 0;">Nota</p>
+      <p style="font-size:.75rem;color:var(--text-faint);">Template disimpan di browser. Gunakan tombol "WA" di tabel untuk menghantar mesej dengan template terpilih.</p>
     </div>
   </div>
 
@@ -591,10 +639,6 @@
       <button id="atPengguna" onclick="showAdminSub('Pengguna')" class="btn admtab-inactive" style="border-radius:8px;">
         <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         Urus Pengguna
-      </button>
-      <button id="atWATemplate" onclick="showAdminSub('WATemplate')" class="btn admtab-inactive" style="border-radius:8px;">
-        <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-        Template WhatsApp
       </button>
       <button id="atGDrive" onclick="showAdminSub('GDrive')" class="btn admtab-inactive" style="border-radius:8px;">
         <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
@@ -677,62 +721,7 @@
     </div>
 
     <!-- ── WhatsApp Templates Sub ── -->
-    <div id="asub-WATemplate" class="hidden">
-      <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:1.25rem;align-items:start;">
-
-        <!-- Form -->
-        <div class="card" style="padding:1.5rem;">
-          <p class="sec-label">Urus Template</p>
-          <h3 style="font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:700;color:var(--blue-dark);margin-bottom:1rem;" id="waTplFormTitle">Tambah Template Baru</h3>
-
-          <div style="display:flex;flex-direction:column;gap:.875rem;">
-            <input type="hidden" id="waTplId">
-            <div>
-              <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Nama Template *</label>
-              <input id="waTplName" type="text" placeholder="cth: Jemputan Mesyuarat Biasa" class="inp">
-            </div>
-            <div>
-              <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Teks Mesej *</label>
-              <textarea id="waTplBody" rows="8" class="inp" placeholder="Tulis mesej WhatsApp di sini...&#10;&#10;Gunakan placeholder di bawah untuk data dinamik."></textarea>
-            </div>
-
-            <!-- Placeholder helper -->
-            <div>
-              <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);margin-bottom:6px;">Sisip Placeholder (klik untuk tambah)</p>
-              <div style="display:flex;flex-wrap:wrap;gap:5px;">
-                <span class="ph-tag" onclick="insertPh('{nama_ahli}')">&#123;nama_ahli&#125;</span>
-                <span class="ph-tag" onclick="insertPh('{nama_pic}')">&#123;nama_pic&#125;</span>
-                <span class="ph-tag" onclick="insertPh('{syarikat}')">&#123;syarikat&#125;</span>
-                <span class="ph-tag" onclick="insertPh('{tarikh}')">&#123;tarikh&#125;</span>
-                <span class="ph-tag" onclick="insertPh('{tempat}')">&#123;tempat&#125;</span>
-                <span class="ph-tag" onclick="insertPh('{nama_mesyuarat}')">&#123;nama_mesyuarat&#125;</span>
-                <span class="ph-tag" onclick="insertPh('{no_ahli}')">&#123;no_ahli&#125;</span>
-              </div>
-            </div>
-
-            <div style="display:flex;gap:.5rem;">
-              <button onclick="saveTpl()" class="btn btn-green" style="flex:1;justify-content:center;">
-                <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                <span id="waTplSaveLbl">Simpan Template</span>
-              </button>
-              <button onclick="cancelEditTpl()" id="waTplCancelBtn" class="btn btn-white hidden">Batal</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Template List -->
-        <div class="card" style="padding:1.5rem;">
-          <p class="sec-label">Disimpan</p>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-            <h3 style="font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:700;color:var(--blue-dark);">Senarai Template</h3>
-            <span id="tplCount" style="font-size:.75rem;color:var(--text-faint);font-weight:600;"></span>
-          </div>
-          <div id="waTplList" style="display:flex;flex-direction:column;gap:.625rem;">
-            <p style="font-size:.85rem;color:var(--text-faint);text-align:center;padding:2rem 0;">Belum ada template. Tambah satu di sebelah kiri.</p>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Moved to Senarai Kehadiran tab -->
 
     <!-- ── Google Drive Sub ── -->
     <div id="asub-GDrive" class="hidden">
@@ -1024,8 +1013,8 @@ function updateDashboard(){
 }
 
 // ── TABLE (compact merged column) ──
-const ADMIN_H=['Bil','Ahli & Syarikat','No. HP','Daerah','Jawatan','Status','Catatan','Dikemaskini','Tindakan'];
-const AJK_H  =['Bil','Ahli & Syarikat','No. HP','Daerah','Status','Catatan','Tindakan'];
+const ADMIN_H=['Bil','Ahli & Syarikat','No. HP','Daerah','Catatan','Tindakan'];
+const AJK_H  =['Bil','Ahli & Syarikat','No. HP','Daerah','Catatan','Tindakan'];
 
 function renderTable(){
   const headers=isAdmin()?ADMIN_H:AJK_H;
@@ -1046,26 +1035,22 @@ function renderTable(){
     const badge=badgeClass(r.status), noAhli=esc(r.NO_AHLI||''), nama=esc(r.NAMA_AHLI||'-'), catatan=esc(r.catatan||'');
     const phone=cleanPhone(r.NO_HP);
     // Action buttons
-    const waBtn=phone?`<button onclick="openWATpl('${phone}','${noAhli}','${nama}')" title="WhatsApp" style="background:#25D366;color:#fff;border:none;border-radius:7px;padding:.35rem .55rem;cursor:pointer;font-size:.75rem;transition:opacity .15s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">💬</button>`:'';
-    const editBtn=`<button onclick="openModal('${noAhli}','${nama}','${r.status}','${catatan}')" style="background:var(--blue);color:#fff;border:none;border-radius:7px;padding:.35rem .55rem;cursor:pointer;font-size:.75rem;transition:opacity .15s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">✏️</button>`;
+    const waBtn=phone?`<button onclick="openWATpl('${phone}','${noAhli}','${nama}')" title="WhatsApp" style="background:#25D366;color:#fff;border:none;border-radius:6px;padding:.3rem .6rem;cursor:pointer;font-size:.7rem;font-weight:600;transition:opacity .15s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">WA</button>`:'';
+    const editBtn=`<button onclick="openModal('${noAhli}','${nama}','${r.status}','${catatan}')" style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:.3rem .6rem;cursor:pointer;font-size:.7rem;font-weight:600;transition:opacity .15s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">Edit</button>`;
     // Merged member cell
     const memberCell=`<div>
       <div class="member-cell-id">${r.NO_AHLI||'-'}</div>
       <div class="member-cell-co">${r.NAMA_AHLI||'-'}</div>
       ${r.NAMA?`<div class="member-cell-pic">👤 ${r.NAMA}</div>`:''}
     </div>`;
-    const adminCols=isAdmin()?`
-      <td style="padding:.5rem 1rem;font-size:.78rem;color:var(--text-soft);white-space:nowrap;">${r.JAWATAN||'—'}</td>
-      <td style="padding:.5rem 1rem;font-size:.7rem;color:var(--text-faint);">${r.dikemaskini_oleh?shortId(r.dikemaskini_oleh)+(r.dikemaskini_pada?'<br><span style="color:#CBD5E1;">'+fmtDT(r.dikemaskini_pada)+'</span>':''):'—'}</td>`:'';
+    const adminCols='';
     return `<tr class="trow" style="border-bottom:1px solid #F0F5FF;">
-      <td style="padding:.5rem 1rem;font-size:.75rem;color:var(--text-faint);text-align:center;">${i+1}</td>
-      <td style="padding:.5rem 1rem;">${memberCell}</td>
-      <td style="padding:.5rem 1rem;font-size:.8rem;color:var(--text-mid);white-space:nowrap;">${r.NO_HP||'—'}</td>
-      <td style="padding:.5rem 1rem;font-size:.78rem;color:var(--text-soft);white-space:nowrap;">${r.DAERAH||'—'}</td>
-      ${adminCols}
-      <td style="padding:.5rem 1rem;white-space:nowrap;"><span style="font-size:.72rem;padding:.2rem .65rem;border-radius:999px;font-weight:700;" class="${badge}">${r.status}</span></td>
-      <td style="padding:.5rem 1rem;font-size:.78rem;color:var(--text-soft);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(r.catatan||'')}">${r.catatan||'—'}</td>
-      <td style="padding:.5rem 1rem;"><div style="display:flex;gap:4px;">${editBtn}${waBtn}</div></td>
+      <td style="padding:.4rem .6rem;font-size:.7rem;color:var(--text-faint);text-align:center;">${i+1}</td>
+      <td style="padding:.4rem .6rem;">${memberCell}</td>
+      <td style="padding:.4rem .6rem;font-size:.75rem;color:var(--text-mid);white-space:nowrap;">${r.NO_HP||'—'}</td>
+      <td style="padding:.4rem .6rem;font-size:.7rem;color:var(--text-soft);white-space:nowrap;">${r.DAERAH||'—'}</td>
+      <td style="padding:.4rem .6rem;font-size:.7rem;color:var(--text-soft);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(r.catatan||'')}">${r.catatan||'—'}</td>
+      <td style="padding:.4rem .6rem;"><div style="display:flex;gap:3px;">${editBtn}${waBtn}</div></td>
     </tr>`;
   }).join('');
 }
@@ -1355,17 +1340,16 @@ function showTab(tab){
   document.getElementById('tab'+capitalize(tab)).classList.remove('hidden');
   document.getElementById('nav'+capitalize(tab)).classList.add('nav-tab-active');
   if(tab==='admin'){showAdminSub('Mesyuarat');loadUsers();}
-  if(tab==='senarai')renderTable();
+  if(tab==='senarai'){renderTable();renderTplList();}
 }
 function showAdminSub(sub){
-  ['Mesyuarat','Pengguna','WATemplate','GDrive'].forEach(s=>{
+  ['Mesyuarat','Pengguna','GDrive'].forEach(s=>{
     const c=document.getElementById('asub-'+s),b=document.getElementById('at'+s);
     if(c)c.classList.add('hidden');
     if(b)b.className='btn admtab-inactive';
   });
   document.getElementById('asub-'+sub).classList.remove('hidden');
   document.getElementById('at'+sub).className='btn admtab-active';
-  if(sub==='WATemplate')renderTplList();
 }
 
 // ── UTILS ──
