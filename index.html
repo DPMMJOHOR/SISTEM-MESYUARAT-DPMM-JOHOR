@@ -576,8 +576,8 @@
       </div>
     </div>
 
-    <!-- WhatsApp Templates Section -->
-    <div class="card" style="padding:1.5rem;">
+    <!-- WhatsApp Templates Section — Admin can manage, AJK can only view templates used via WA button -->
+    <div class="card admin-only" style="padding:1.5rem;">
       <p class="sec-label">Mesej</p>
       <h3 id="waTplFormTitle" style="font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:700;color:var(--blue-dark);margin-bottom:1.25rem;">Template WhatsApp</h3>
       
@@ -1136,8 +1136,10 @@ async function renderTplList(){
           <span style="font-size:.875rem;font-weight:700;color:var(--text-mid);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(t.nama)}</span>
         </div>
         <div style="display:flex;gap:4px;flex-shrink:0;">
+          ${isAdmin()?`
           <button onclick="editTpl(${t.id})" style="background:var(--blue-light);border:1.5px solid var(--blue-pale);color:var(--blue);font-size:.72rem;padding:.25rem .55rem;border-radius:6px;cursor:pointer;font-weight:600;transition:background .15s;" onmouseover="this.style.background='var(--blue-pale)'" onmouseout="this.style.background='var(--blue-light)'">✏️ Edit</button>
           <button onclick="deleteTpl(${t.id})" style="background:var(--red-light);border:1.5px solid var(--red-mid);color:var(--red);font-size:.72rem;padding:.25rem .55rem;border-radius:6px;cursor:pointer;font-weight:600;transition:background .15s;" onmouseover="this.style.background='#FEE2E2'" onmouseout="this.style.background='var(--red-light)'">🗑️ Padam</button>
+          `:''}
         </div>
       </div>
       <div style="font-size:.78rem;color:var(--text-soft);background:var(--blue-light);border-radius:7px;padding:.5rem .75rem;white-space:pre-wrap;max-height:70px;overflow:hidden;line-height:1.5;">${esc(t.kandungan).substring(0,200)}${t.kandungan.length>200?'…':''}</div>
@@ -1357,6 +1359,8 @@ function doPrint(){
 
 // ── NAV ──
 function showTab(tab){
+  // Guard: AJK/Staff cannot access admin tab under any circumstance
+  if(tab==='admin' && !isAdmin()) return;
   ['dash','senarai','admin'].forEach(t=>{
     const el=document.getElementById('tab'+capitalize(t)),nav=document.getElementById('nav'+capitalize(t));
     if(el)el.classList.add('hidden');
