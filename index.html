@@ -847,9 +847,10 @@ const MAIN_FOLDER  = 'Sistem Pengurusan Mesyuarat DPMM Johor';
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let user=null, meeting=null, members=[], kehadiran=[], merged=[], filtered=[], waTemplates=[];
+let user=null, meeting=null, members=[], kehadiran=[], merged=[], filtered=[], waTemplates=[], blastQueue=[];
 let editNoAhli='', selStatus='', gToken=null, gapiReady=false, gisReady=false, tokenClient=null;
 let waTargetPhone='', waTargetRow=null, selTplId=null;
+let selectedRows=new Set();
 
 const isAdmin = () => user && user.peranan !== 'ajk';
 
@@ -881,7 +882,7 @@ async function doLogin() {
 }
 function setLoginErr(msg){const el=document.getElementById('loginErr');el.textContent=msg;el.classList.remove('hidden');}
 function doLogout(){
-  user=meeting=null; members=kehadiran=merged=filtered=[];
+  user=meeting=null; members=kehadiran=merged=filtered=[]; waTemplates=[]; blastQueue=[]; selectedRows=new Set();
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('mainApp').classList.add('hidden');
   document.getElementById('lgId').value=''; document.getElementById('lgPw').value='';
@@ -1012,12 +1013,12 @@ function updateDashboard(){
 }
 
 // ── TABLE (compact merged column) ──
-const ADMIN_H=['Bil','Ahli & Syarikat','No. HP','Daerah','Status','Catatan','Jawatan','Dikemaskini','Tindakan'];
-const AJK_H  =['Bil','Ahli & Syarikat','No. HP','Daerah','Status','Catatan','Tindakan'];
+const ADMIN_H=['','Bil','Ahli & Syarikat','No. HP','Daerah','Status','Catatan','Jawatan','Dikemaskini','Tindakan'];
+const AJK_H  =['','Bil','Ahli & Syarikat','No. HP','Daerah','Status','Catatan','Tindakan'];
 
 function renderTable(){
   const headers=isAdmin()?ADMIN_H:AJK_H;
-  document.getElementById('thRow').innerHTML=headers.map(h=>`
+  document.getElementById('thRow').innerHTML=`<th style="padding:.625rem .5rem;text-align:center;background:var(--blue-dark);"><input type="checkbox" title="Pilih Semua" onchange="selectAll(this)" style="cursor:pointer;width:14px;height:14px;"></th>`+headers.slice(1).map(h=>`
     <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap;background:var(--blue-dark);color:rgba(255,255,255,0.85);">${h}</th>
   `).join('');
   const tbody=document.getElementById('tbBody');
@@ -1034,7 +1035,7 @@ function renderTable(){
     const badge=badgeClass(r.status), noAhli=esc(r.NO_AHLI||''), nama=esc(r.NAMA_AHLI||'-'), catatan=esc(r.catatan||'');
     const phone=cleanPhone(r.NO_HP);
     // Action buttons
-    const waBtn=phone?`<button onclick="openWATpl('${phone}','${noAhli}','${nama}')" title="WhatsApp" style="background:#25D366;color:#fff;border:none;border-radius:6px;padding:.3rem .6rem;cursor:pointer;font-size:.7rem;font-weight:600;transition:opacity .15s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">WA</button>`:'';
+    const waBtn=(phone&&canSend())?`<button onclick="openWATpl('${phone}','${noAhli}','${nama}')" title="WhatsApp" style="background:#25D366;color:#fff;border:none;border-radius:6px;padding:.3rem .6rem;cursor:pointer;font-size:.7rem;font-weight:600;transition:opacity .15s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">WA</button>`:'';
     const editBtn=`<button onclick="openModal('${noAhli}','${nama}','${r.status}','${catatan}')" style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:.3rem .6rem;cursor:pointer;font-size:.7rem;font-weight:600;transition:opacity .15s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">Edit</button>`;
     // Merged member cell
     const memberCell=`<div>
@@ -1046,7 +1047,9 @@ function renderTable(){
       <td style="padding:.4rem .6rem;font-size:.7rem;color:var(--text-soft);white-space:nowrap;">${r.JAWATAN||'—'}</td>
       <td style="padding:.4rem .6rem;font-size:.68rem;color:var(--text-faint);white-space:nowrap;">${r.dikemaskini_oleh?shortId(r.dikemaskini_oleh)+'<br><span style="color:#c7d2fe">'+fmtDT(r.dikemaskini_pada)+'</span>':'-'}</td>
     `:'';
-    return `<tr class="trow" style="border-bottom:1px solid #F0F5FF;">
+    const isSelected=selectedRows.has(r.NO_AHLI||'');
+    return `<tr class="trow" style="border-bottom:1px solid #F0F5FF;${isSelected?'background:#EFF6FF;':''}"> 
+      <td style="padding:.4rem .5rem;text-align:center;"><input type="checkbox" ${isSelected?'checked':''} onchange="toggleRowSelect('${(r.NO_AHLI||'').replace(/'/g,'')}')" style="cursor:pointer;width:14px;height:14px;"></td>
       <td style="padding:.4rem .6rem;font-size:.7rem;color:var(--text-faint);text-align:center;">${i+1}</td>
       <td style="padding:.4rem .6rem;">${memberCell}</td>
       <td style="padding:.4rem .6rem;font-size:.75rem;color:var(--text-mid);white-space:nowrap;">${r.NO_HP||'—'}</td>
@@ -1379,6 +1382,7 @@ function showAdminSub(sub){
   });
   document.getElementById('asub-'+sub).classList.remove('hidden');
   document.getElementById('at'+sub).className='btn admtab-active';
+  if(sub==='Pengguna') loadUsers();
 }
 
 // ── UTILS ──
