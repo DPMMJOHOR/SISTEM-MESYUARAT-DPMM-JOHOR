@@ -1,0 +1,49 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Inject secrets into index.html
+        run: |
+          python3 -c "
+          import sys
+          c = open('index.html').read()
+          c = c.replace('YOUR_SUPABASE_KEY_HERE', sys.argv[1])
+          c = c.replace('YOUR_GOOGLE_CID_HERE', sys.argv[2])
+          c = c.replace('YOUR_GROQ_KEY_HERE', sys.argv[3])
+          open('index.html', 'w').write(c)
+          " "${{ secrets.SUPABASE_KEY }}" "${{ secrets.GOOGLE_CID }}" "${{ secrets.GROQ_KEY }}"
+        # Using Python — sed breaks when secret value contains '/' or '&' (JWT keys always do)
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

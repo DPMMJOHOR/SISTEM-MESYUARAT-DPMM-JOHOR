@@ -841,17 +841,21 @@
 <script>
 // ── CONFIG ──
 const SUPABASE_URL = 'https://lzoloupwtqmjyupvofhh.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6b2xvdXB3dHFtanl1cHZvZmhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NTMxMTEsImV4cCI6MjA4ODUyOTExMX0.tBcGc6KfPyjUmJngbLTBHv-GZkSoSoyWGXwlXFZ0ShE';
-const GOOGLE_CID   = 'YOUR_GOOGLE_CLIENT_ID_HERE';
+const SUPABASE_KEY = 'YOUR_SUPABASE_KEY_HERE';
+const GOOGLE_CID   = 'YOUR_GOOGLE_CID_HERE';
 const MAIN_FOLDER  = 'Sistem Pengurusan Mesyuarat DPMM Johor';
+const GROQ_KEY     = 'YOUR_GROQ_KEY_HERE';
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let user=null, meeting=null, members=[], kehadiran=[], merged=[], filtered=[], waTemplates=[];
 let editNoAhli='', selStatus='', gToken=null, gapiReady=false, gisReady=false, tokenClient=null;
 let waTargetPhone='', waTargetRow=null, selTplId=null;
+let blastQueue=[], selectedRows=new Set();
 
-const isAdmin = () => user && user.peranan !== 'ajk';
+const isAdmin = () => user && user.peranan === 'admin';
+const canSend  = () => user && (user.peranan === 'admin' || user.peranan === 'user');
+const canEdit  = () => user !== null;
 
 // ── LOGIN ──
 document.addEventListener('DOMContentLoaded', () => {
@@ -901,6 +905,8 @@ async function bootApp(){
     document.getElementById('hdrBadge').style.cssText='background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.85);font-size:.68rem;padding:.15rem .55rem;border-radius:999px;font-weight:600;';
     document.querySelectorAll('.admin-only').forEach(el=>el.classList.add('hidden'));
   }
+  const aimanBtn=document.getElementById('aimanBtn');
+  if(aimanBtn&&canSend()){aimanBtn.classList.remove('hidden');aimanBtn.style.display='flex';}
   await loadMembers(); await loadMeetings(); showTab('dash');
 }
 
@@ -1034,7 +1040,7 @@ function renderTable(){
     const badge=badgeClass(r.status), noAhli=esc(r.NO_AHLI||''), nama=esc(r.NAMA_AHLI||'-'), catatan=esc(r.catatan||'');
     const phone=cleanPhone(r.NO_HP);
     // Action buttons
-    const waBtn=phone?`<button onclick="openWATpl('${phone}','${noAhli}','${nama}')" title="WhatsApp" style="background:#25D366;color:#fff;border:none;border-radius:6px;padding:.3rem .6rem;cursor:pointer;font-size:.7rem;font-weight:600;transition:opacity .15s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">WA</button>`:'';
+    const waBtn=(phone&&canSend())?`<button onclick="openWATpl('${phone}','${noAhli}','${nama}')" title="WhatsApp" style="background:#25D366;color:#fff;border:none;border-radius:6px;padding:.3rem .6rem;cursor:pointer;font-size:.7rem;font-weight:600;transition:opacity .15s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">WA</button>`:'';
     const editBtn=`<button onclick="openModal('${noAhli}','${nama}','${r.status}','${catatan}')" style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:.3rem .6rem;cursor:pointer;font-size:.7rem;font-weight:600;transition:opacity .15s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">Edit</button>`;
     // Merged member cell
     const memberCell=`<div>
@@ -1297,7 +1303,7 @@ async function loadUsers(){
 
 // ── GOOGLE DRIVE ──
 function initGIS(){
-  if(GOOGLE_CID==='YOUR_GOOGLE_CLIENT_ID_HERE')return;
+  if(GOOGLE_CID==='YOUR_GOOGLE_CID_HERE')return;
   tokenClient=google.accounts.oauth2.initTokenClient({client_id:GOOGLE_CID,scope:'https://www.googleapis.com/auth/drive.file',callback:(resp)=>{
     if(resp.error){toast('❌ Google auth gagal: '+resp.error,'err');return;}
     gToken=resp.access_token; gapi.client.setToken(resp);
@@ -1305,7 +1311,7 @@ function initGIS(){
   }}); gisReady=true;
 }
 function authorizeGoogle(){
-  if(GOOGLE_CID==='YOUR_GOOGLE_CLIENT_ID_HERE'){toast('⚠️ Sila konfigurasi Google Client ID.','err');return;}
+  if(GOOGLE_CID==='YOUR_GOOGLE_CID_HERE'){toast('⚠️ Sila konfigurasi Google Client ID.','err');return;}
   if(!gisReady){toast('⚠️ Google APIs belum siap.','err');return;}
   tokenClient.requestAccessToken({prompt:''});
 }
@@ -1398,7 +1404,7 @@ function toast(msg,type='ok'){
 
 // ── GOOGLE CALLBACKS ──
 function gapiLoaded(){gapi.load('client',()=>{gapi.client.init({discoveryDocs:['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']}).then(()=>{gapiReady=true;});});}
-function gisLoaded(){if(GOOGLE_CID!=='YOUR_GOOGLE_CLIENT_ID_HERE')initGIS();}
+function gisLoaded(){if(GOOGLE_CID!=='YOUR_GOOGLE_CID_HERE')initGIS();}
 window.addEventListener('load',()=>{setTimeout(()=>{if(typeof google!=='undefined'&&google.accounts)gisLoaded();},1500);});
 </script>
 
