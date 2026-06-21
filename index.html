@@ -549,14 +549,30 @@
             <option value="">Semua Daerah</option>
           </select>
         </div>
-        <div style="display:flex;align-items:center;gap:.625rem;">
+        <div style="display:flex;align-items:center;gap:.625rem;flex-wrap:wrap;">
           <span id="rowCount" style="font-size:.75rem;color:var(--text-faint);font-weight:500;"></span>
+          <button onclick="exportCSV()" class="btn btn-white">
+            <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            CSV
+          </button>
           <button onclick="doPrint()" class="btn btn-white">
             <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
             Cetak
           </button>
         </div>
       </div>
+    </div>
+
+    <!-- Bulk action bar -->
+    <div id="bulkBar" style="display:none;background:#EFF6FF;border:1.5px solid var(--blue-pale);border-radius:10px;padding:.625rem 1rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center;gap:.625rem;" class="no-print">
+      <span id="bulkCount" style="font-size:.8rem;font-weight:700;color:var(--blue);">0 dipilih</span>
+      <select id="bulkStatusSel" class="inp" style="width:auto;font-size:.8rem;">
+        <option value="">Pilih Status Baru</option>
+        <option>Hadir</option><option>Tidak Hadir</option>
+        <option>Belum Dihubungi</option><option>Lain-lain</option>
+      </select>
+      <button onclick="applyBulkStatus()" class="btn btn-blue" style="font-size:.8rem;padding:.35rem .75rem;">Kemaskini</button>
+      <button onclick="clearBulkSelect()" class="btn btn-white" style="font-size:.8rem;padding:.35rem .75rem;">Batal Pilih</button>
     </div>
 
     <!-- Table -->
@@ -622,8 +638,15 @@
         </div>
       </div>
       <input type="hidden" id="waTplId">
-      <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);margin:1rem 0 0;">Nota</p>
-      <p style="font-size:.75rem;color:var(--text-faint);">Template disimpan di browser. Gunakan tombol "WA" di tabel untuk menghantar mesej dengan template terpilih.</p>
+      <div style="margin-top:1.25rem;">
+        <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);margin-bottom:.625rem;">Blast Pantas</p>
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;">
+          <button onclick="prepareBlast('Belum Dihubungi')" class="btn btn-white" style="font-size:.78rem;">📤 Blast Belum Dihubungi</button>
+          <button onclick="prepareBlast('Semua')" class="btn btn-white" style="font-size:.78rem;">📤 Blast Semua</button>
+        </div>
+        <p style="font-size:.72rem;color:var(--text-faint);margin-top:.5rem;">Antrian disimpan ke Supabase. Jalankan <code>node scripts/blast-runner.js</code> untuk hantar via WAHA.</p>
+        <p style="font-size:.72rem;color:var(--text-faint);margin-top:.25rem;">Lihat data ahli: <a href="https://dpmmjohor.github.io/SISTEM-AHLI-DPMM-JOHOR/" target="_blank" style="color:var(--blue);font-weight:600;">Sistem Ahli DPMM →</a></p>
+      </div>
     </div>
   </div>
 
@@ -699,6 +722,33 @@
 
     <!-- ── Pengguna Sub ── -->
     <div id="asub-Pengguna" class="hidden">
+      <div class="card" style="padding:1.5rem;margin-bottom:1rem;">
+        <p class="sec-label">Tambah Baru</p>
+        <h3 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;color:var(--blue-dark);margin-bottom:1.25rem;">Tambah Pengguna</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.875rem;">
+          <div>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">ID / Emel *</label>
+            <input id="fUserId" type="text" placeholder="admin@dpmm.my" class="inp">
+          </div>
+          <div>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Nama Penuh *</label>
+            <input id="fUserNama" type="text" placeholder="Nama pengguna" class="inp">
+          </div>
+          <div>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Kata Laluan *</label>
+            <input id="fUserPw" type="password" placeholder="Kata laluan" class="inp">
+          </div>
+          <div>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Peranan *</label>
+            <select id="fUserPeranan" class="inp">
+              <option value="ajk">AJK / Staf</option>
+              <option value="user">Pentadbir (Boleh Hantar WA)</option>
+              <option value="admin">Admin Penuh</option>
+            </select>
+          </div>
+        </div>
+        <button onclick="saveNewUser()" class="btn btn-blue" style="margin-top:.875rem;">+ Tambah Pengguna</button>
+      </div>
       <div class="card" style="overflow:hidden;">
         <div style="padding:1rem 1.25rem;background:var(--blue-light);border-bottom:1.5px solid var(--border);">
           <p class="sec-label">Direktori</p>
@@ -958,6 +1008,7 @@ function renderMeetList(list){
           ${m.aktif?'<span style="background:#DCFCE7;color:#15803D;font-size:.68rem;padding:.15rem .55rem;border-radius:999px;font-weight:700;">Aktif</span>':''}
           ${!m.aktif?`<button onclick="setActive('${m.mesyuarat_id}')" style="background:var(--blue-light);border:1.5px solid var(--blue-pale);color:var(--blue);font-size:.7rem;padding:.2rem .55rem;border-radius:6px;cursor:pointer;font-weight:600;">Set Aktif</button>`:''}
           ${!m.gdrive_folder_url?`<button onclick="doSetupDrive('${m.mesyuarat_id}')" style="background:#EFF6FF;border:1.5px solid #BFDBFE;color:var(--blue);font-size:.7rem;padding:.2rem .55rem;border-radius:6px;cursor:pointer;font-weight:600;">📁 Jana Folder</button>`:''}
+          ${isAdmin()?`<button onclick="deleteMeeting('${m.mesyuarat_id}')" style="background:#FEF2F2;border:1.5px solid #FECACA;color:var(--red);font-size:.7rem;padding:.2rem .55rem;border-radius:6px;cursor:pointer;font-weight:600;">🗑️</button>`:''}
         </div>
       </div>
     </div>
@@ -1274,7 +1325,15 @@ async function createMeeting(){
   if(!driveM&&gToken){try{const r=await createDriveFolder(meetId);driveUrl=r.url;driveId=r.id;toast('📁 Folder Drive dijana');}catch(e){console.warn(e);}}
   const{error}=await db.from('DPMM_MESYUARAT').insert({mesyuarat_id:meetId,nama,tarikh:tarikh||null,tempat:tempat||null,gdrive_folder_id:driveId,gdrive_folder_url:driveUrl,aktif:false,dibuat_oleh:user.user_id,dibuat_pada:new Date().toISOString(),dikemaskini_pada:new Date().toISOString()});
   if(error){toast('❌ '+(error.message.includes('unique')?'ID sudah wujud.':error.message),'err');btn.innerHTML='<svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Cipta &amp; Jana Rekod Kehadiran';btn.disabled=false;return;}
-  const total=await seedAttendance(meetId);
+  let total=0;
+  try{
+    const{data:fnData,error:fnErr}=await db.functions.invoke('seed-attendance',{body:{mesyuarat_id:meetId}});
+    if(fnErr)throw fnErr;
+    total=fnData?.seeded||0;
+  }catch(e){
+    console.warn('Edge function unavailable, seeding locally:',e.message);
+    total=await seedAttendance(meetId);
+  }
   toast(`✅ ${meetId} dicipta! ${total} rekod dijana.`);
   ['fMeetId','fMeetNama','fMeetTarikh','fMeetTempat','fMeetDrive'].forEach(id=>{document.getElementById(id).value='';});
   btn.innerHTML='<svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Cipta &amp; Jana Rekod Kehadiran';
@@ -1410,5 +1469,288 @@ window.addEventListener('load',()=>{setTimeout(()=>{if(typeof google!=='undefine
 
 <script>function gapiLoadCallback(){gapiLoaded();}</script>
 <script src="https://apis.google.com/js/api.js?onload=gapiLoadCallback" async defer></script>
+
+<!-- ══════════════════ AIMAN WIDGET ══ -->
+<div id="aimanBtn" class="hidden no-print"
+     style="position:fixed;bottom:5.5rem;right:1.25rem;z-index:1000;background:linear-gradient(135deg,#1E3A8A,#2563EB);color:#fff;border:none;border-radius:999px;padding:.65rem 1.1rem;font-size:.85rem;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(37,99,235,0.4);align-items:center;gap:6px;font-family:'DM Sans',sans-serif;transition:all .2s;"
+     onclick="toggleAiman()"
+     onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 30px rgba(37,99,235,0.5)'"
+     onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(37,99,235,0.4)'">
+  🤖 Aiman
+</div>
+
+<div id="aimanPanel" class="hidden no-print"
+     style="position:fixed;bottom:1.25rem;right:1.25rem;z-index:999;width:360px;max-width:calc(100vw - 2rem);background:#fff;border-radius:18px;box-shadow:0 20px 60px rgba(37,99,235,0.2),0 0 0 1.5px rgba(37,99,235,0.12);display:flex;flex-direction:column;overflow:hidden;">
+  <div style="background:linear-gradient(135deg,#1E3A8A,#2563EB);padding:.875rem 1rem;display:flex;justify-content:space-between;align-items:center;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:1.2rem;">🤖</span>
+      <div>
+        <p style="font-weight:700;color:#fff;font-size:.875rem;font-family:'Outfit',sans-serif;">Aiman</p>
+        <p style="color:rgba(255,255,255,.7);font-size:.68rem;">Pembantu Mesyuarat DPMM</p>
+      </div>
+    </div>
+    <button onclick="toggleAiman()" style="background:rgba(255,255,255,.15);border:none;border-radius:8px;color:#fff;padding:.3rem .5rem;cursor:pointer;font-size:.75rem;">✕</button>
+  </div>
+  <div id="aimanMessages" style="flex:1;overflow-y:auto;padding:.875rem;display:flex;flex-direction:column;gap:.625rem;max-height:360px;min-height:120px;">
+    <div style="background:var(--blue-light);border-radius:12px 12px 12px 4px;padding:.625rem .875rem;font-size:.82rem;color:var(--text-mid);max-width:85%;align-self:flex-start;">
+      Salam! Saya Aiman 👋 Saya boleh bantu analisis kehadiran, jana mesej blast WA, atau jawab soalan tentang mesyuarat ini.
+    </div>
+  </div>
+  <div style="padding:.625rem;border-top:1.5px solid var(--border);display:flex;gap:.5rem;">
+    <input id="aimanInput" type="text" placeholder="Tanya Aiman..." class="inp" style="flex:1;font-size:.82rem;"
+           onkeyup="if(event.key==='Enter')aimanSend()">
+    <button onclick="aimanSend()" id="aimanSendBtn"
+            style="background:var(--blue);color:#fff;border:none;border-radius:9px;padding:.5rem .75rem;cursor:pointer;font-size:.85rem;font-weight:700;transition:background .15s;"
+            onmouseover="this.style.background='var(--blue-mid)'" onmouseout="this.style.background='var(--blue)'">➤</button>
+  </div>
+</div>
+
+<!-- ══════════════════ BLAST MODAL ══ -->
+<div id="blastModal" style="display:none;position:fixed;inset:0;z-index:60;align-items:center;justify-content:center;padding:1rem;background:rgba(30,58,138,0.45);backdrop-filter:blur(5px);">
+  <div style="background:#fff;border-radius:18px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(30,58,138,0.25);">
+    <div style="padding:1.25rem 1.5rem;border-bottom:1.5px solid var(--border);">
+      <h3 style="font-family:'Outfit',sans-serif;font-weight:700;color:var(--blue-dark);">📤 Pratonton Blast WhatsApp</h3>
+    </div>
+    <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem;">
+      <div id="blastSummary" style="background:var(--blue-light);border-radius:8px;padding:.75rem 1rem;font-size:.82rem;color:var(--text-mid);"></div>
+      <div>
+        <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);margin-bottom:.5rem;">Pratonton (5 pertama)</p>
+        <div id="blastPreviewList" style="display:flex;flex-direction:column;gap:3px;max-height:160px;overflow-y:auto;"></div>
+      </div>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end;">
+        <button class="btn btn-white" onclick="closeBlastModal()">Batal</button>
+        <button class="btn btn-blue" onclick="saveBlastQueue()" id="btnSaveBlast">💾 Simpan Antrian (0)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ NEW JS FUNCTIONS ══ -->
+<script>
+// ── LOG SEND ──
+async function logSend(jenis,bilangan,filterNama){
+  await db.from('DPMM_SEND_LOG').insert({jenis,bilangan,filter_nama:filterNama,dihantar_oleh:user?.user_id,dihantar_pada:new Date().toISOString()});
+}
+
+// ── AIMAN AI ──
+let aimanHistory=[];
+const AIMAN_SYSTEM=`Kamu adalah Aiman, pembantu AI Sistem Pengurusan Mesyuarat DPMM Negeri Johor. Jawab dalam Bahasa Melayu ringkas dan profesional.
+Kamu boleh:
+1. Analisis data kehadiran mesyuarat semasa (boleh akses pembolehubah 'merged' dan 'meeting')
+2. Jana senarai blast WhatsApp — balas dengan JSON array: [{"no_hp":"60xxx","nama":"...","no_ahli":"..."}]
+3. Jawab soalan tentang mesyuarat, ahli, dan prosedur DPMM
+Jika soalan memerlukan data semasa, gunakan context yang disediakan.`;
+
+function toggleAiman(){
+  const p=document.getElementById('aimanPanel');
+  const isHidden=p.classList.contains('hidden');
+  p.classList.toggle('hidden');
+  if(!p.classList.contains('hidden')) document.getElementById('aimanInput').focus();
+}
+
+function aimanAppendMsg(content,role){
+  const el=document.getElementById('aimanMessages');
+  const div=document.createElement('div');
+  div.style.cssText=role==='user'
+    ?'background:var(--blue);color:#fff;border-radius:12px 12px 4px 12px;padding:.625rem .875rem;font-size:.82rem;max-width:85%;align-self:flex-end;'
+    :'background:var(--blue-light);color:var(--text-mid);border-radius:12px 12px 12px 4px;padding:.625rem .875rem;font-size:.82rem;max-width:85%;align-self:flex-start;white-space:pre-wrap;';
+  div.textContent=content;
+  el.appendChild(div);
+  el.scrollTop=el.scrollHeight;
+  return div;
+}
+
+async function aimanSend(){
+  const inp=document.getElementById('aimanInput');
+  const msg=inp.value.trim(); if(!msg)return;
+  inp.value='';
+  document.getElementById('aimanSendBtn').disabled=true;
+  aimanAppendMsg(msg,'user');
+  aimanHistory.push({role:'user',content:msg});
+
+  const contextSnippet=`Mesyuarat aktif: ${meeting?.mesyuarat_id||'(tiada)'} | ${meeting?.nama||''} | ${meeting?.tarikh?fmtDate(meeting.tarikh):''}.
+Ringkasan kehadiran: ${merged.length} ahli — Hadir: ${merged.filter(r=>r.status==='Hadir').length}, Tidak Hadir: ${merged.filter(r=>r.status==='Tidak Hadir').length}, Belum Dihubungi: ${merged.filter(r=>r.status==='Belum Dihubungi').length}.`;
+
+  const thinkingEl=aimanAppendMsg('⏳ Sedang berfikir...','assistant');
+  try{
+    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
+      body:JSON.stringify({
+        model:'llama-3.1-8b-instant',
+        messages:[
+          {role:'system',content:AIMAN_SYSTEM+'\n\nKonteks semasa:\n'+contextSnippet},
+          ...aimanHistory
+        ],
+        max_tokens:600,temperature:0.7
+      })
+    });
+    if(!resp.ok){const e=await resp.json();throw new Error(e.error?.message||resp.statusText);}
+    const json=await resp.json();
+    const reply=json.choices[0].message.content;
+    aimanHistory.push({role:'assistant',content:reply});
+    thinkingEl.textContent=reply;
+    parseAimanIntent(reply);
+  }catch(e){
+    thinkingEl.textContent='❌ Ralat: '+e.message;
+  }finally{
+    document.getElementById('aimanSendBtn').disabled=false;
+    document.getElementById('aimanInput').focus();
+  }
+}
+
+function parseAimanIntent(reply){
+  const jsonMatch=reply.match(/\[[\s\S]*\]/);
+  if(!jsonMatch)return;
+  try{
+    const list=JSON.parse(jsonMatch[0]);
+    if(!Array.isArray(list)||list.length===0)return;
+    if(!list[0].no_hp&&!list[0].nama)return;
+    const yes=confirm(`Aiman menjana ${list.length} penerima WA blast. Buka pratonton?`);
+    if(!yes)return;
+    blastQueue=list.map(item=>{
+      const member=merged.find(m=>(m.NO_AHLI===item.no_ahli)||(m.NO_HP&&cleanPhone(m.NO_HP)===cleanPhone(item.no_hp||'')));
+      return member||{NO_AHLI:item.no_ahli||'',NAMA_AHLI:item.nama||'',NO_HP:item.no_hp||'',status:''};
+    }).filter(r=>r.NO_HP||r.no_hp);
+    openBlastModal('Senarai Aiman');
+  }catch(e){console.warn('parseAimanIntent:',e);}
+}
+
+// ── WA BLAST QUEUE ──
+function openBlastModal(filterLabel){
+  const tpl=waTemplates.find(t=>t.id==selTplId)||waTemplates[0]||null;
+  const preview=blastQueue.slice(0,5).map(r=>`
+    <div style="padding:.3rem 0;border-bottom:1px solid #f0f0f0;">
+      <span style="font-weight:600;">${r.NAMA_AHLI||r.nama||r.no_ahli||''}</span>
+      <span style="color:var(--text-soft);font-size:.75rem;"> — ${r.NO_HP||r.no_hp||''}</span>
+    </div>`).join('');
+  document.getElementById('blastSummary').innerHTML=
+    `Filter: <strong>${filterLabel}</strong> &nbsp;|&nbsp; Jumlah: <strong>${blastQueue.length} ahli</strong>`+
+    (tpl?`<br>Template: <strong>${esc(tpl.nama)}</strong>`:'<br><span style="color:var(--red);">⚠️ Tiada template dipilih</span>');
+  document.getElementById('blastPreviewList').innerHTML=preview||'<p style="color:var(--text-faint);font-size:.78rem;">Tiada penerima</p>';
+  document.getElementById('btnSaveBlast').textContent=`💾 Simpan Antrian (${blastQueue.length})`;
+  document.getElementById('blastModal').style.display='flex';
+}
+
+function prepareBlast(statusFilter){
+  if(!meeting){toast('⚠️ Pilih mesyuarat dahulu.','err');return;}
+  if(waTemplates.length===0){toast('⚠️ Tiada template WA. Tambah template dahulu.','err');return;}
+  blastQueue=merged.filter(r=>{
+    if(statusFilter==='Belum Dihubungi') return r.status==='Belum Dihubungi';
+    if(statusFilter==='Semua') return true;
+    return r.status===statusFilter;
+  }).filter(r=>r.NO_HP);
+  if(blastQueue.length===0){toast('⚠️ Tiada ahli dalam kategori ini atau tiada nombor telefon.','err');return;}
+  openBlastModal(statusFilter);
+}
+
+function closeBlastModal(){document.getElementById('blastModal').style.display='none';blastQueue=[];}
+
+function buildWaText(kandungan,member){
+  const tarikh=meeting?.tarikh?fmtDate(meeting.tarikh):'';
+  return kandungan
+    .replace(/\{nama_ahli\}/g,member.NAMA_AHLI||member.nama||member.no_ahli||'')
+    .replace(/\{no_ahli\}/g,member.NO_AHLI||member.no_ahli||'')
+    .replace(/\{syarikat\}/g,member.NAMA_AHLI||'')
+    .replace(/\{tarikh\}/g,tarikh)
+    .replace(/\{tempat\}/g,meeting?.tempat||'')
+    .replace(/\{nama_mesyuarat\}/g,meeting?.nama||'');
+}
+
+async function saveBlastQueue(){
+  if(!blastQueue.length){closeBlastModal();return;}
+  const tpl=waTemplates.find(t=>t.id==selTplId)||waTemplates[0];
+  const records=blastQueue.map(r=>({
+    mesyuarat_id:meeting.mesyuarat_id,
+    no_ahli:r.NO_AHLI||r.no_ahli||'',
+    nama_ahli:r.NAMA_AHLI||r.nama||'',
+    no_hp:cleanPhone(r.NO_HP||r.no_hp||''),
+    teks_mesej:buildWaText(tpl?.kandungan||'Jemputan Mesyuarat',r),
+    status:'Pending',
+    dibuat_oleh:user.user_id,
+    created_at:new Date().toISOString()
+  }));
+  // Remove existing Pending rows for this meeting first — prevents duplicate blasts
+  await db.from('DPMM_BLAST_QUEUE').delete().eq('mesyuarat_id',meeting.mesyuarat_id).eq('status','Pending');
+  const{error}=await db.from('DPMM_BLAST_QUEUE').insert(records);
+  if(error){toast('❌ Gagal simpan antrian: '+error.message,'err');return;}
+  closeBlastModal();
+  toast(`✅ ${records.length} mesej disimpan. Jalankan blast-runner.js pada laptop untuk hantar via WAHA.`);
+  await logSend('WA',records.length,'Antrian disimpan - pending WAHA');
+}
+
+// ── BULK ATTENDANCE ──
+function toggleRowSelect(noAhli){
+  if(selectedRows.has(noAhli)) selectedRows.delete(noAhli);
+  else selectedRows.add(noAhli);
+  updateBulkBar();
+}
+function selectAll(cb){
+  const keys=filtered.map(r=>r.NO_AHLI||r.no_ahli);
+  if(cb.checked) keys.forEach(k=>selectedRows.add(k));
+  else selectedRows.clear();
+  updateBulkBar();
+  renderTable();
+}
+function updateBulkBar(){
+  const bar=document.getElementById('bulkBar');
+  const cnt=document.getElementById('bulkCount');
+  if(!bar)return;
+  cnt.textContent=`${selectedRows.size} dipilih`;
+  bar.style.display=selectedRows.size>0?'flex':'none';
+}
+function clearBulkSelect(){selectedRows.clear();updateBulkBar();renderTable();}
+async function applyBulkStatus(){
+  const s=document.getElementById('bulkStatusSel').value; if(!s){toast('⚠️ Pilih status dahulu.','err');return;}
+  if(!selectedRows.size){toast('⚠️ Tiada rekod dipilih.','err');return;}
+  const keys=[...selectedRows];
+  const now=new Date().toISOString();
+  const {error}=await db.from('DPMM_KEHADIRAN')
+    .update({status:s,dikemaskini_oleh:user.user_id,dikemaskini_pada:now})
+    .eq('mesyuarat_id',meeting.mesyuarat_id)
+    .in('no_ahli',keys);
+  if(error){toast('❌ Gagal kemaskini: '+error.message,'err');return;}
+  keys.forEach(k=>{const idx=merged.findIndex(r=>(r.NO_AHLI||r.no_ahli)===k);if(idx>=0){merged[idx].status=s;merged[idx].dikemaskini_oleh=user.user_id;merged[idx].dikemaskini_pada=new Date();}});
+  filtered=[...merged]; filterTable();
+  clearBulkSelect();
+  toast(`✅ ${keys.length} rekod dikemaskini: ${s}`);
+}
+
+// ── CSV EXPORT ──
+function exportCSV(){
+  const headers=['Bil','No. Ahli','Nama Syarikat','Nama PIC','No. HP','Daerah','Status','Catatan'];
+  const rows=filtered.map((r,i)=>[i+1,r.NO_AHLI||'',r.NAMA_AHLI||'',r.NAMA||'',r.NO_HP||'',r.DAERAH||'',r.status,r.catatan||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv='\uFEFF'+[headers.join(','),...rows].join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`kehadiran_${meeting?.mesyuarat_id||'eksport'}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ── DELETE MEETING ──
+async function deleteMeeting(meetId){
+  if(!confirm(`Padam mesyuarat ${meetId}? Semua rekod kehadiran akan turut dipadam.`))return;
+  const{error}=await db.from('DPMM_MESYUARAT').delete().eq('mesyuarat_id',meetId);
+  if(error){toast('❌ Gagal padam: '+error.message,'err');return;}
+  toast(`🗑️ ${meetId} dipadam.`);
+  await loadMeetings();
+}
+
+// ── ADD USER ──
+async function saveNewUser(){
+  const uid=document.getElementById('fUserId').value.trim();
+  const nama=document.getElementById('fUserNama').value.trim();
+  const pw=document.getElementById('fUserPw').value.trim();
+  const peranan=document.getElementById('fUserPeranan').value;
+  if(!uid||!nama||!pw){toast('⚠️ Semua medan wajib diisi.','err');return;}
+  const{error}=await db.from('DPMM_USERS').insert({user_id:uid,nama,kata_laluan:pw,peranan,aktif:true,created_at:new Date().toISOString()});
+  if(error){toast('❌ '+(error.message.includes('unique')?'ID sudah wujud.':error.message),'err');return;}
+  toast(`✅ Pengguna ${uid} ditambah!`);
+  ['fUserId','fUserNama','fUserPw'].forEach(id=>{document.getElementById(id).value='';});
+  await loadUsers();
+}
+</script>
+
 </body>
 </html>
