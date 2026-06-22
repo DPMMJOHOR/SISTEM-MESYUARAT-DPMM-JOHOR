@@ -6,6 +6,7 @@
 <title>Sistem Pengurusan Mesyuarat — DPMM Negeri Johor</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config-local.js" onerror="console.info('config-local.js tidak dijumpai — menggunakan konfigurasi lalai.')"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
@@ -381,6 +382,10 @@
           <div id="hdrName" style="font-size:.8rem;color:#fff;font-weight:600;"></div>
           <span id="hdrBadge" style="font-size:.68rem;padding:.15rem .55rem;border-radius:999px;font-weight:700;"></span>
         </div>
+        <a href="https://dpmmjohor.github.io/SISTEM-AHLI-DPMM-JOHOR/" target="_blank"
+           style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.22);color:rgba(255,255,255,0.85);border-radius:8px;font-size:.75rem;padding:.4rem .875rem;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;text-decoration:none;transition:background .15s;"
+           onmouseover="this.style.background='rgba(255,255,255,0.22)'"
+           onmouseout="this.style.background='rgba(255,255,255,0.12)'">← Sistem Ahli</a>
         <button onclick="doLogout()"
                 style="background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.25);color:#fff;border-radius:8px;font-size:.78rem;padding:.4rem .875rem;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;transition:background .15s;"
                 onmouseover="this.style.background='rgba(255,255,255,0.25)'"
@@ -891,10 +896,12 @@
 <script>
 // ── CONFIG ──
 const SUPABASE_URL = 'https://lzoloupwtqmjyupvofhh.supabase.co';
-const SUPABASE_KEY = 'YOUR_SUPABASE_KEY_HERE';
-const GOOGLE_CID   = 'YOUR_GOOGLE_CID_HERE';
+const SUPABASE_KEY = (typeof CONFIG !== 'undefined' && CONFIG.SUPABASE_KEY && !CONFIG.SUPABASE_KEY.startsWith('YOUR_'))
+  ? CONFIG.SUPABASE_KEY
+  : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6b2xvdXB3dHFtanl1cHZvZmhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NTMxMTEsImV4cCI6MjA4ODUyOTExMX0.tBcGc6KfPyjUmJngbLTBHv-GZkSoSoyWGXwlXFZ0ShE';
+const GOOGLE_CID   = (typeof CONFIG !== 'undefined' && CONFIG.GOOGLE_CID && !CONFIG.GOOGLE_CID.startsWith('YOUR_')) ? CONFIG.GOOGLE_CID : 'YOUR_GOOGLE_CID_HERE';
 const MAIN_FOLDER  = 'Sistem Pengurusan Mesyuarat DPMM Johor';
-const GROQ_KEY     = 'YOUR_GROQ_KEY_HERE';
+const GROQ_KEY     = (typeof CONFIG !== 'undefined' && CONFIG.GROQ_KEY && !CONFIG.GROQ_KEY.startsWith('YOUR_')) ? CONFIG.GROQ_KEY : 'YOUR_GROQ_KEY_HERE';
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -928,6 +935,7 @@ async function doLogin() {
     if(!data.aktif){setLoginErr('Akaun tidak aktif. Hubungi pentadbir.');return;}
     if(data.kata_laluan!==pw){setLoginErr('Kata laluan tidak betul.');return;}
     user={user_id:data.user_id,nama:data.nama,peranan:data.peranan};
+    logAudit('LOGIN','DPMM_USERS',user.user_id);
     await bootApp();
   }catch(e){setLoginErr('Ralat sambungan. Cuba semula.');console.error(e);}
   finally{btn.innerHTML='Log Masuk';btn.disabled=false;}
@@ -1336,6 +1344,7 @@ async function createMeeting(){
     total=await seedAttendance(meetId);
   }
   toast(`✅ ${meetId} dicipta! ${total} rekod dijana.`);
+  logAudit('CIPTA_MESYUARAT','DPMM_MESYUARAT',meetId,{nama,total_rekod:total});
   ['fMeetId','fMeetNama','fMeetTarikh','fMeetTempat','fMeetDrive'].forEach(id=>{document.getElementById(id).value='';});
   btn.innerHTML='<svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Cipta &amp; Jana Rekod Kehadiran';
   btn.disabled=false; await loadMeetings();
@@ -1535,6 +1544,13 @@ async function logSend(jenis,bilangan,filterNama){
   await db.from('DPMM_SEND_LOG').insert({jenis,bilangan,filter_nama:filterNama,dihantar_oleh:user?.user_id,dihantar_pada:new Date().toISOString()});
 }
 
+// ── AUDIT LOG ──
+async function logAudit(tindakan,jadual,rekodId,butiran){
+  try{
+    await db.from('DPMM_AUDIT_LOG').insert({tindakan,jadual,rekod_id:rekodId||null,pengguna:user?.user_id||'anon',butiran:butiran||null});
+  }catch(e){console.warn('logAudit failed (non-blocking):',e);}
+}
+
 // ── AIMAN AI ──
 let aimanHistory=[];
 const AIMAN_SYSTEM=`Kamu adalah Aiman, pembantu AI Sistem Pengurusan Mesyuarat DPMM Negeri Johor. Jawab dalam Bahasa Melayu ringkas dan profesional.
@@ -1682,6 +1698,7 @@ async function saveBlastQueue(){
   closeBlastModal();
   toast(`✅ ${records.length} mesej disimpan. Jalankan blast-runner.js pada laptop untuk hantar via WAHA.`);
   await logSend('WA',records.length,'Antrian disimpan - pending WAHA');
+  logAudit('SIMPAN_BLAST_QUEUE','DPMM_BLAST_QUEUE',meeting.mesyuarat_id,{count:records.length});
 }
 
 // ── BULK ATTENDANCE ──
@@ -1719,6 +1736,7 @@ async function applyBulkStatus(){
   filtered=[...merged]; filterTable();
   clearBulkSelect();
   toast(`✅ ${keys.length} rekod dikemaskini: ${s}`);
+  logAudit('KEMASKINI_KEHADIRAN_BULK','DPMM_KEHADIRAN',meeting.mesyuarat_id,{count:keys.length,status:s});
 }
 
 // ── CSV EXPORT ──
@@ -1739,6 +1757,7 @@ async function deleteMeeting(meetId){
   const{error}=await db.from('DPMM_MESYUARAT').delete().eq('mesyuarat_id',meetId);
   if(error){toast('❌ Gagal padam: '+error.message,'err');return;}
   toast(`🗑️ ${meetId} dipadam.`);
+  logAudit('PADAM_MESYUARAT','DPMM_MESYUARAT',meetId);
   await loadMeetings();
 }
 
