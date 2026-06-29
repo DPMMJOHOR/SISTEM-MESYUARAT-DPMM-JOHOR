@@ -11,6 +11,7 @@
 <script src="js/non-member-contacts.js"></script>
 <script src="js/rsvp-tracker.js"></script>
 <script src="js/qr-generator.js"></script>
+<script src="js/attendee-qr-generator.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
@@ -1857,6 +1858,16 @@ function openMeetingDetail(meetId){
         <div id="eventQRCodeContainer" style="display:flex;justify-content:center;align-items:center;min-height:200px;background:var(--blue-light);border-radius:8px;border:2px dashed var(--blue-pale);">
           <p style="color:var(--text-faint);font-size:.85rem;">QR code akan dipaparkan di sini</p>
         </div>
+      </div>
+    </div>
+    
+    <!-- Attendee QR Code Section -->
+    <div class="card" style="padding:1.5rem;margin-bottom:1rem;">
+      <h4 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;color:var(--blue-dark);margin-bottom:1rem;">QR Code untuk Check-In Peserta</h4>
+      <p style="color:var(--text-soft);font-size:.85rem;margin-bottom:1rem;">Jana QR code individu untuk semua peserta yang disahkan hadir.</p>
+      <button onclick="generateAndDisplayAttendeeQRCodes()" class="btn btn-blue" style="justify-content:center;margin-bottom:1rem;">🎫 Jana QR Code Peserta</button>
+      <div id="attendeeQRCodeContainer" style="min-height:200px;background:var(--blue-light);border-radius:8px;border:2px dashed var(--blue-pale);padding:1rem;">
+        <p style="text-align:center;color:var(--text-faint);font-size:.85rem;">QR code peserta akan dipaparkan di sini</p>
       </div>
     </div>
     
