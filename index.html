@@ -625,6 +625,14 @@
             <textarea id="waTplBody" placeholder="Tulis mesej di sini..." class="inp" style="min-height:120px;resize:vertical;"></textarea>
             <p style="font-size:.72rem;color:var(--text-faint);margin-top:3px;">Gunakan {nama}, {syarikat}, {tarikh} untuk pembolehubah.</p>
           </div>
+          <div>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Imej (Pilihan)</label>
+            <input id="waTplImage" type="file" accept="image/jpeg,image/png,image/gif" class="inp">
+            <p style="font-size:.72rem;color:var(--text-faint);margin-top:3px;">Format: JPG, PNG, GIF. Saiz maksimum: 5MB</p>
+            <div id="waTplImagePreview" class="hidden" style="margin-top:.5rem;">
+              <img id="waTplImagePreviewImg" style="max-width:100%;max-height:200px;border-radius:8px;border:1.5px solid var(--border);">
+            </div>
+          </div>
           <button onclick="saveTpl()" class="btn btn-blue" style="justify-content:center;">+ Simpan Template</button>
         </div>
       </div>
@@ -1378,6 +1386,7 @@ async function renderTplList(){
         </div>
       </div>
       <div style="font-size:.78rem;color:var(--text-soft);background:var(--blue-light);border-radius:7px;padding:.5rem .75rem;white-space:pre-wrap;max-height:70px;overflow:hidden;line-height:1.5;">${esc(t.kandungan).substring(0,200)}${t.kandungan.length>200?'…':''}</div>
+      ${t.image_url?`<div style="margin-top:.5rem;"><img src="${t.image_url}" style="max-width:100%;max-height:100px;border-radius:6px;border:1px solid var(--border);"></div>`:''}
     </div>
   `).join('');
 }
@@ -1387,20 +1396,93 @@ async function saveTpl(){
   const kandungan=document.getElementById('waTplBody').value.trim();
   const idRaw=document.getElementById('waTplId').value;
   const id=idRaw?parseInt(idRaw):null;
+  const imageFile=document.getElementById('waTplImage').files[0];
+  
   if(!nama||!kandungan){toast('⚠️ Nama dan teks mesej wajib diisi.','err');return;}
+  
+  let imageUrl = null;
+  
+  // Handle image upload if provided
+  if(imageFile){
+    // Validate image size (5MB max)
+    if(imageFile.size > 5 * 1024 * 1024){
+      toast('⚠️ Saiz imej terlalu besar. Maksimum 5MB.','err');
+      return;
+    }
+    
+    // Validate image format
+    const validFormats = ['image/jpeg', 'image/png', 'image/gif'];
+    if(!validFormats.includes(imageFile.type)){
+      toast('⚠️ Format imej tidak sah. Gunakan JPG, PNG atau GIF.','err');
+      return;
+    }
+    
+    try{
+      imageUrl = await uploadTemplateImage(imageFile);
+    }catch(error){
+      toast('❌ Gagal memuat naik imej: '+error.message,'err');
+      return;
+    }
+  }
+  
   if(id){
     // Update existing
-    const{error}=await db.from('DPMM_TEMPLATES').update({nama,kandungan,updated_at:new Date().toISOString()}).eq('id',id);
+    const updateData = {nama,kandungan,updated_at:new Date().toISOString()};
+    if(imageUrl) updateData.image_url = imageUrl;
+    
+    const{error}=await db.from('DPMM_TEMPLATES').update(updateData).eq('id',id);
     if(error){toast('❌ Gagal kemaskini: '+error.message,'err');return;}
   }else{
     // Insert new — template_key = timestamp int
-    const{error}=await db.from('DPMM_TEMPLATES').insert({template_key:Date.now(),nama,kandungan,created_by:user.user_id});
+    const insertData = {template_key:Date.now(),nama,kandungan,created_by:user.user_id};
+    if(imageUrl) insertData.image_url = imageUrl;
+    
+    const{error}=await db.from('DPMM_TEMPLATES').insert(insertData);
     if(error){toast('❌ Gagal simpan: '+error.message,'err');return;}
   }
   cancelEditTpl();
   await renderTplList();
   toast('✅ Template '+(id?'dikemaskini':'disimpan')+'!');
 }
+
+/**
+ * Upload template image to Supabase Storage
+ */
+async function uploadTemplateImage(file){
+  const fileName = `template-${Date.now()}-${file.name}`;
+  const { data, error } = await supabase.storage
+    .from('template-images')
+    .upload(fileName, file);
+  
+  if(error) throw error;
+  
+  // Get public URL
+  const { data: { publicUrl } } = supabase.storage
+    .from('template-images')
+    .getPublicUrl(fileName);
+  
+  return publicUrl;
+}
+
+/**
+ * Handle image file selection for preview
+ */
+document.getElementById('waTplImage').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  const previewDiv = document.getElementById('waTplImagePreview');
+  const previewImg = document.getElementById('waTplImagePreviewImg');
+  
+  if(file){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      previewImg.src = e.target.result;
+      previewDiv.classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+  }else{
+    previewDiv.classList.add('hidden');
+  }
+});
 
 function editTpl(id){
   const t=waTemplates.find(x=>x.id===id); if(!t)return;
