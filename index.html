@@ -9,6 +9,7 @@
 <script src="config-local.js" onerror="console.info('config-local.js tidak dijumpai — menggunakan konfigurasi lalai.')"></script>
 <script src="js/csv-excel-parser.js"></script>
 <script src="js/non-member-contacts.js"></script>
+<script src="js/rsvp-tracker.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
@@ -1678,6 +1679,11 @@ function openMeetingDetail(meetId){
   meeting=meet;
   loadKehadiran();
   
+  // Load RSVPs for this event
+  if(typeof loadEventRSVPs === 'function'){
+    loadEventRSVPs(meetId);
+  }
+  
   // Show meeting detail in Senarai Mesyuarat tab
   const container=document.getElementById('senaraiMesyuaratList');
   container.innerHTML=`
@@ -1718,6 +1724,12 @@ function openMeetingDetail(meetId){
           <div style="font-size:.75rem;color:var(--text-soft);">Lain-lain</div>
         </div>
       </div>
+    </div>
+    
+    <!-- RSVP Dashboard -->
+    <div id="rsvpDashboard" class="card" style="padding:1.5rem;margin-bottom:1rem;">
+      <h4 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;color:var(--blue-dark);margin-bottom:1rem;">Tracking RSVP</h4>
+      <p style="color:var(--text-soft);font-size:.85rem;">Memuatkan data RSVP...</p>
     </div>
     
     <!-- Attendance Table -->
