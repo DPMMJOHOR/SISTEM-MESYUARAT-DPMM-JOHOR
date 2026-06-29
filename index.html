@@ -13,6 +13,7 @@
 <script src="js/qr-generator.js"></script>
 <script src="js/attendee-qr-generator.js"></script>
 <script src="js/access-control.js"></script>
+<script src="js/reminder-scheduler.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
@@ -1117,6 +1118,51 @@
   </div>
 </div>
 
+<!-- ══════════════════ REMINDER MODAL ══ -->
+<div id="reminderModal" class="hidden" style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:1rem;background:rgba(30,58,138,0.45);backdrop-filter:blur(5px);">
+  <div style="background:#fff;border-radius:18px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(30,58,138,0.25);">
+    <div style="padding:1.25rem 1.5rem;border-bottom:1.5px solid var(--border);">
+      <h3 style="font-family:'Outfit',sans-serif;font-weight:700;color:var(--blue-dark);">Jadual Peringatan Automatik</h3>
+    </div>
+    <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem;">
+      <input type="hidden" id="reminderEventId">
+      <div>
+        <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Tarikh & Masa *</label>
+        <input id="reminderScheduledTime" type="datetime-local" class="inp">
+      </div>
+      <div>
+        <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Penerima</label>
+        <select id="reminderRecipientFilter" class="inp">
+          <option value="all">Semua Peserta</option>
+          <option value="non_responders">Belum Respons Sahaja</option>
+          <option value="confirmed">Sahkan Hadir Sahaja</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Template *</label>
+        <select id="reminderTemplate" class="inp">
+          <option value="">-- Pilih Template --</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Saluran</label>
+        <div style="display:flex;gap:.5rem;">
+          <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--text-mid);cursor:pointer;">
+            <input type="checkbox" id="reminderBlastWA" checked> WhatsApp
+          </label>
+          <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--text-mid);cursor:pointer;">
+            <input type="checkbox" id="reminderBlastEmail"> Emel
+          </label>
+        </div>
+      </div>
+    </div>
+    <div style="padding:1rem 1.5rem;border-top:1.5px solid var(--border);display:flex;gap:.625rem;">
+      <button onclick="closeReminderModal()" class="btn btn-white" style="flex:1;justify-content:center;">Batal</button>
+      <button onclick="saveReminderFromModal()" class="btn btn-blue" style="flex:1;justify-content:center;">Jadualkan</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════════════ TOAST ══ -->
 <div id="toast" class="hidden no-print"
      style="position:fixed;bottom:1.25rem;right:1.25rem;z-index:9999;color:#fff;font-size:.85rem;padding:.75rem 1.25rem;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.2);max-width:320px;font-family:'DM Sans',sans-serif;font-weight:500;">
@@ -1886,6 +1932,15 @@ function openMeetingDetail(meetId){
     loadEventRSVPs(meetId);
   }
   
+  // Load reminders for this event
+  if(typeof loadEventReminders === 'function'){
+    loadEventReminders(meetId).then(reminders => {
+      if(typeof renderRemindersList === 'function'){
+        renderRemindersList(reminders, 'remindersList');
+      }
+    });
+  }
+  
   // Show meeting detail in Senarai Mesyuarat tab
   const container=document.getElementById('senaraiMesyuaratList');
   container.innerHTML=`
@@ -1955,6 +2010,17 @@ function openMeetingDetail(meetId){
       <button onclick="generateAndDisplayAttendeeQRCodes()" class="btn btn-blue" style="justify-content:center;margin-bottom:1rem;">🎫 Jana QR Code Peserta</button>
       <div id="attendeeQRCodeContainer" style="min-height:200px;background:var(--blue-light);border-radius:8px;border:2px dashed var(--blue-pale);padding:1rem;">
         <p style="text-align:center;color:var(--text-faint);font-size:.85rem;">QR code peserta akan dipaparkan di sini</p>
+      </div>
+    </div>
+    
+    <!-- Reminders Section -->
+    <div class="card" style="padding:1.5rem;margin-bottom:1rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+        <h4 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;color:var(--blue-dark);">Jadual Peringatan Automatik</h4>
+        <button onclick="openReminderModal('${meet.mesyuarat_id}')" class="btn btn-blue" style="padding:.4rem .8rem;font-size:.8rem;">+ Jadual Peringatan</button>
+      </div>
+      <div id="remindersList" style="min-height:100px;">
+        <p style="text-align:center;color:var(--text-faint);font-size:.85rem;">Memuatkan peringatan...</p>
       </div>
     </div>
     
