@@ -12,6 +12,7 @@
 <script src="js/rsvp-tracker.js"></script>
 <script src="js/qr-generator.js"></script>
 <script src="js/attendee-qr-generator.js"></script>
+<script src="js/access-control.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
@@ -931,6 +932,15 @@
               <option value="admin">Admin Penuh</option>
             </select>
           </div>
+          <div>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Biro</label>
+            <select id="fUserBureau" class="inp">
+              <option value="">-- Tiada Biro --</option>
+              <option value="Biro Professional">Biro Professional</option>
+              <option value="Biro Kontraktor">Biro Kontraktor</option>
+              <option value="Biro International Trade">Biro International Trade</option>
+            </select>
+          </div>
         </div>
         <button onclick="saveNewUser()" class="btn btn-blue" style="margin-top:.875rem;">+ Tambah Pengguna</button>
       </div>
@@ -945,11 +955,12 @@
               <th style="padding:.7rem 1.25rem;text-align:left;font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.8);">ID / Emel</th>
               <th style="padding:.7rem 1.25rem;text-align:left;font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.8);">Nama</th>
               <th style="padding:.7rem 1.25rem;text-align:left;font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.8);">Peranan</th>
+              <th style="padding:.7rem 1.25rem;text-align:left;font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.8);">Biro</th>
               <th style="padding:.7rem 1.25rem;text-align:left;font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.8);">Status</th>
             </tr>
           </thead>
           <tbody id="userBody">
-            <tr><td colspan="4" style="text-align:center;padding:3rem;color:var(--text-faint);">Memuatkan...</td></tr>
+            <tr><td colspan="5" style="text-align:center;padding:3rem;color:var(--text-faint);">Memuatkan...</td></tr>
           </tbody>
         </table>
       </div>
@@ -1642,13 +1653,14 @@ async function seedAttendance(meetId){
 
 // ── USERS ──
 async function loadUsers(){
-  const{data}=await db.from('DPMM_USERS').select('user_id,nama,peranan,aktif').order('id'); if(!data)return;
+  const{data}=await db.from('DPMM_USERS').select('user_id,nama,peranan,aktif,bureau').order('id'); if(!data)return;
   const roleLabel={admin:'🔴 Pentadbir Utama',user:'🟡 Pentadbir',ajk:'🟢 AJK / Staf'};
   document.getElementById('userBody').innerHTML=data.map(u=>`
     <tr style="border-bottom:1px solid #F0F5FF;" onmouseover="this.style.background='var(--blue-light)'" onmouseout="this.style.background=''">
       <td style="padding:.7rem 1.25rem;font-size:.82rem;font-family:monospace;color:var(--text-soft);">${u.user_id}</td>
       <td style="padding:.7rem 1.25rem;font-size:.85rem;font-weight:700;color:var(--text-mid);">${u.nama}</td>
       <td style="padding:.7rem 1.25rem;"><span style="font-size:.72rem;padding:.2rem .65rem;border-radius:999px;font-weight:700;${u.peranan==='admin'?'background:#FEE2E2;color:#B91C1C;':u.peranan==='ajk'?'background:#DCFCE7;color:#15803D;':'background:#FEF9C3;color:#A16207;'}">${roleLabel[u.peranan]||u.peranan}</span></td>
+      <td style="padding:.7rem 1.25rem;font-size:.75rem;color:var(--text-mid);">${u.bureau||'-'}</td>
       <td style="padding:.7rem 1.25rem;"><span style="font-size:.72rem;padding:.2rem .65rem;border-radius:999px;font-weight:700;${u.aktif?'background:#DCFCE7;color:#15803D;':'background:#FEE2E2;color:#B91C1C;'}">${u.aktif?'Aktif':'Tidak Aktif'}</span></td>
     </tr>
   `).join('');
@@ -2484,11 +2496,14 @@ async function saveNewUser(){
   const nama=document.getElementById('fUserNama').value.trim();
   const pw=document.getElementById('fUserPw').value.trim();
   const peranan=document.getElementById('fUserPeranan').value;
+  const bureau=document.getElementById('fUserBureau').value;
   if(!uid||!nama||!pw){toast('⚠️ Semua medan wajib diisi.','err');return;}
-  const{error}=await db.from('DPMM_USERS').insert({user_id:uid,nama,kata_laluan:pw,peranan,aktif:true,created_at:new Date().toISOString()});
+  const insertData={user_id:uid,nama,kata_laluan:pw,peranan,aktif:true,created_at:new Date().toISOString()};
+  if(bureau) insertData.bureau = bureau;
+  const{error}=await db.from('DPMM_USERS').insert(insertData);
   if(error){toast('❌ '+(error.message.includes('unique')?'ID sudah wujud.':error.message),'err');return;}
   toast(`✅ Pengguna ${uid} ditambah!`);
-  ['fUserId','fUserNama','fUserPw'].forEach(id=>{document.getElementById(id).value='';});
+  ['fUserId','fUserNama','fUserPw','fUserBureau'].forEach(id=>{document.getElementById(id).value='';});
   await loadUsers();
 }
 </script>
