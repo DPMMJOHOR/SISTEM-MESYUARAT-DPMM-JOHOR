@@ -1,0 +1,27 @@
+// Configuration template for Sistem Hebahan DPMM Johor
+// Copy this file to config.js and fill in your actual values
+// DO NOT commit config.js to version control
+
+const CONFIG = {
+  // Supabase Configuration
+  SUPABASE_URL: 'https://lzoloupwtqmjyupvofhh.supabase.co',
+  SUPABASE_KEY: 'your_supabase_anon_key_here',
+
+  // Google Configuration
+  GOOGLE_CID: 'your_google_client_id_here',
+
+  // Groq AI Configuration
+  GROQ_KEY: 'your_groq_api_key_here',
+
+  // WAHA Configuration (Local)
+  WAHA_URL: 'http://localhost:3000',
+
+  // Resend Configuration
+  RESEND_API_KEY: 'your_resend_api_key_here',
+  RESEND_FROM_EMAIL: 'noreply@yourdomain.com',
+
+  // Google Drive API Configuration
+  GOOGLE_DRIVE_CLIENT_ID: 'your_google_drive_client_id_here',
+  GOOGLE_DRIVE_CLIENT_SECRET: 'your_google_drive_client_secret_here',
+  GOOGLE_DRIVE_REDIRECT_URI: 'http://localhost:3000/auth/callback',
+};

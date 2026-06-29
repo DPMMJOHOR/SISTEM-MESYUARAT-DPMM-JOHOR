@@ -1,8 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
+import Constants from 'expo-constants';
 
-const SUPABASE_URL = 'https://lzoloupwtqmjyupvofhh.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6b2xvdXB3dHFtanl1cHZvZmhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjAyMzE3NDcsImV4cCI6MjAzNTgwNzM0N30.YOUR_KEY_HERE';
+// Load environment variables from Expo Constants or fallback to defaults
+const SUPABASE_URL = Constants.expoConfig?.extra?.supabaseUrl || 'https://lzoloupwtqmjyupvofhh.supabase.co';
+const SUPABASE_KEY = Constants.expoConfig?.extra?.supabaseKey || 'YOUR_SUPABASE_KEY_HERE';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 

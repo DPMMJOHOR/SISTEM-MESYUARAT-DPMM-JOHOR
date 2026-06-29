@@ -74,7 +74,25 @@ Tambah `SUPABASE_SERVICE_ROLE_KEY` dalam Supabase Dashboard â†’ Edge Functions â
 
 Buka `index.html` terus dalam browser atau guna VS Code Live Server.
 
-Untuk ujian dengan kunci sebenar, salin `config-local.js.example` ke `config-local.js` (tidak di-commit).
+### Konfigurasi Alam Sekitar
+
+Untuk pembangunan tempatan, anda perlu menyediakan fail konfigurasi:
+
+**Web Application:**
+1. Salin `config.example.js` ke `config.js`
+2. Isi nilai sebenar untuk SUPABASE_KEY, GOOGLE_CID, GROQ_KEY, dll.
+3. Jangan commit `config.js` ke version control (sudah ada dalam .gitignore)
+
+**Mobile Application:**
+1. Salin `mobile-app/.env.example` ke `mobile-app/.env`
+2. Isi nilai sebenar untuk EXPO_PUBLIC_SUPABASE_URL dan EXPO_PUBLIC_SUPABASE_KEY
+3. Jangan commit `.env` ke version control
+
+**Environment Variables (pilihan alternatif):**
+Anda juga boleh menggunakan fail `.env` di root project:
+1. Salin `.env.example` ke `.env`
+2. Isi nilai sebenar
+3. Jangan commit `.env` ke version control
 
 ## Stack Teknologi
 
