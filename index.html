@@ -882,6 +882,44 @@
                 <input id="fMeetTempat" type="text" placeholder="Johor Bahru" class="inp">
               </div>
             </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+              <div>
+                <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Jenis Acara</label>
+                <select id="fMeetEventType" class="inp">
+                  <option value="meeting">Mesyuarat</option>
+                  <option value="seminar">Seminar</option>
+                  <option value="workshop">Workshop</option>
+                  <option value="networking">Networking</option>
+                  <option value="training">Latihan</option>
+                  <option value="other">Lain-lain</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Biro</label>
+                <select id="fMeetBureau" class="inp">
+                  <option value="">-- Tiada Biro --</option>
+                  <option value="Biro Professional">Biro Professional</option>
+                  <option value="Biro Kontraktor">Biro Kontraktor</option>
+                  <option value="Biro International Trade">Biro International Trade</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Saluran Blast</label>
+              <div style="display:flex;gap:.5rem;">
+                <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--text-mid);cursor:pointer;">
+                  <input type="checkbox" id="fMeetBlastWA" checked> WhatsApp
+                </label>
+                <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--text-mid);cursor:pointer;">
+                  <input type="checkbox" id="fMeetBlastEmail"> Emel
+                </label>
+              </div>
+            </div>
+            <div>
+              <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Jadual Peringatan</label>
+              <input id="fMeetReminder" type="datetime-local" class="inp">
+              <p style="font-size:.72rem;color:var(--text-faint);margin-top:3px;">Kosongkan jika tiada peringatan automatik</p>
+            </div>
             <div>
               <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Link Google Drive (manual)</label>
               <input id="fMeetDrive" type="text" placeholder="https://drive.google.com/..." class="inp">
@@ -1621,13 +1659,46 @@ async function createMeeting(){
   const nama=document.getElementById('fMeetNama').value.trim();
   const tarikh=document.getElementById('fMeetTarikh').value;
   const tempat=document.getElementById('fMeetTempat').value.trim();
+  const eventType=document.getElementById('fMeetEventType').value;
+  const bureau=document.getElementById('fMeetBureau').value;
+  const blastWA=document.getElementById('fMeetBlastWA').checked;
+  const blastEmail=document.getElementById('fMeetBlastEmail').checked;
+  const reminder=document.getElementById('fMeetReminder').value;
   const driveM=document.getElementById('fMeetDrive').value.trim();
   if(!meetId||!nama){toast('⚠️ ID dan Nama wajib diisi.','err');return;}
+  
+  // Validate bureau access
+  if(bureau && !validateBureauAccess(bureau)) return;
+  
   const btn=document.getElementById('btnCreateMeet');
   btn.innerHTML='<div class="spinner" style="width:15px;height:15px;"></div>&nbsp;Mencipta...'; btn.disabled=true;
+  
+  // Build blast channels array
+  const blastChannels = [];
+  if(blastWA) blastChannels.push('whatsapp');
+  if(blastEmail) blastChannels.push('email');
+  
   let driveUrl=driveM||null, driveId=null;
   if(!driveM&&gToken){try{const r=await createDriveFolder(meetId);driveUrl=r.url;driveId=r.id;toast('📁 Folder Drive dijana');}catch(e){console.warn(e);}}
-  const{error}=await db.from('DPMM_MESYUARAT').insert({mesyuarat_id:meetId,nama,tarikh:tarikh||null,tempat:tempat||null,gdrive_folder_id:driveId,gdrive_folder_url:driveUrl,aktif:false,dibuat_oleh:user.user_id,dibuat_pada:new Date().toISOString(),dikemaskini_pada:new Date().toISOString()});
+  
+  const insertData={
+    mesyuarat_id:meetId,
+    nama,
+    tarikh:tarikh||null,
+    tempat:tempat||null,
+    event_type:eventType,
+    bureau:bureau||null,
+    blast_channels:blastChannels.length>0?blastChannels:null,
+    reminder_schedule:reminder||null,
+    gdrive_folder_id:driveId,
+    gdrive_folder_url:driveUrl,
+    aktif:false,
+    dibuat_oleh:user.user_id,
+    dibuat_pada:new Date().toISOString(),
+    dikemaskini_pada:new Date().toISOString()
+  };
+  
+  const{error}=await db.from('DPMM_MESYUARAT').insert(insertData);
   if(error){toast('❌ '+(error.message.includes('unique')?'ID sudah wujud.':error.message),'err');btn.innerHTML='<svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Cipta &amp; Jana Rekod Kehadiran';btn.disabled=false;return;}
   let total=0;
   try{
@@ -1639,8 +1710,10 @@ async function createMeeting(){
     total=await seedAttendance(meetId);
   }
   toast(`✅ ${meetId} dicipta! ${total} rekod dijana.`);
-  logAudit('CIPTA_MESYUARAT','DPMM_MESYUARAT',meetId,{nama,total_rekod:total});
-  ['fMeetId','fMeetNama','fMeetTarikh','fMeetTempat','fMeetDrive'].forEach(id=>{document.getElementById(id).value='';});
+  logAudit('CIPTA_MESYUARAT','DPMM_MESYUARAT',meetId,{nama,total_rekod:total,event_type:eventType,bureau:bureau});
+  ['fMeetId','fMeetNama','fMeetTarikh','fMeetTempat','fMeetDrive','fMeetEventType','fMeetBureau','fMeetReminder'].forEach(id=>{document.getElementById(id).value='';});
+  document.getElementById('fMeetBlastWA').checked=true;
+  document.getElementById('fMeetBlastEmail').checked=false;
   btn.innerHTML='<svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Cipta &amp; Jana Rekod Kehadiran';
   btn.disabled=false; await loadMeetings();
 }
@@ -1782,10 +1855,12 @@ async function renderSenaraiMesyuarat(){
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
             <span style="font-weight:700;color:var(--blue-dark);font-size:.9rem;">${m.nama||m.mesyuarat_id}</span>
             ${m.aktif?'<span style="background:#DCFCE7;color:#15803D;font-size:.65rem;padding:2px 8px;border-radius:10px;font-weight:700;">AKTIF</span>':''}
+            ${m.event_type?'<span style="background:#EFF6FF;color:#1E40AF;font-size:.65rem;padding:2px 8px;border-radius:10px;font-weight:700;">'+m.event_type+'</span>':''}
           </div>
           <div style="display:flex;gap:12px;font-size:.75rem;color:var(--text-soft);">
             <span>📅 ${m.tarikh?fmtDate(m.tarikh):'-'}</span>
             <span>📍 ${m.tempat||'-'}</span>
+            ${m.bureau?'<span>🏢 '+m.bureau+'</span>':''}
           </div>
         </div>
         <svg style="width:18px;height:18px;color:var(--text-faint);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
