@@ -73,54 +73,37 @@ function parseExcel(file) {
 }
 
 /**
- * Validate contact data
+ * Validate contact data using centralized validation module
  * @param {Object} contact - Contact object to validate
  * @returns {Object} - { valid: boolean, errors: Array }
  */
 function validateContact(contact) {
   const errors = [];
   
-  if (!contact.nama || contact.nama.trim() === '') {
-    errors.push('Nama diperlukan');
-  }
+  // Validate nama
+  const namaResult = Validation.validateText(contact.nama, 'Nama', 2, 100);
+  if (!namaResult.valid) errors.push(namaResult.error);
   
-  if (!contact.emel || contact.emel.trim() === '') {
-    errors.push('Emel diperlukan');
-  } else if (!isValidEmail(contact.emel)) {
-    errors.push('Format emel tidak sah');
-  }
+  // Validate email
+  const emailResult = Validation.validateEmail(contact.emel);
+  if (!emailResult.valid) errors.push(emailResult.error);
   
-  if (!contact.telefon || contact.telefon.trim() === '') {
-    errors.push('No. telefon diperlukan');
-  } else if (!isValidPhone(contact.telefon)) {
-    errors.push('Format telefon tidak sah');
-  }
+  // Validate phone
+  const phoneResult = Validation.validatePhone(contact.telefon);
+  if (!phoneResult.valid) errors.push(phoneResult.error);
+  
+  // Check for SQL injection
+  if (Validation.detectSQLInjection(contact.nama)) errors.push('Nama contains invalid characters');
+  if (Validation.detectSQLInjection(contact.organization)) errors.push('Organization contains invalid characters');
+  
+  // Check for XSS
+  if (Validation.detectXSS(contact.nama)) errors.push('Nama contains invalid characters');
+  if (Validation.detectXSS(contact.organization)) errors.push('Organization contains invalid characters');
   
   return {
     valid: errors.length === 0,
-    errors: errors
+    errors
   };
-}
-
-/**
- * Validate email format
- * @param {string} email - Email to validate
- * @returns {boolean}
- */
-function isValidEmail(email) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
-
-/**
- * Validate phone format (Malaysian format)
- * @param {string} phone - Phone to validate
- * @returns {boolean}
- */
-function isValidPhone(phone) {
-  // Accept formats: +60123456789, 0123456789, 60123456789
-  const phoneRegex = /^(\+?6?01)[0-9]{8,9}$/;
-  return phoneRegex.test(phone.replace(/[\s-]/g, ''));
 }
 
 /**

@@ -7,6 +7,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config-local.js" onerror="console.info('config-local.js tidak dijumpai — menggunakan konfigurasi lalai.')"></script>
+<script src="js/validation.js"></script>
 <script src="js/csv-excel-parser.js"></script>
 <script src="js/non-member-contacts.js"></script>
 <script src="js/rsvp-tracker.js"></script>
@@ -1170,13 +1171,17 @@
 
 <script>
 // ── CONFIG ──
-const SUPABASE_URL = 'https://lzoloupwtqmjyupvofhh.supabase.co';
+// Load environment variables from CONFIG object or fallback to defaults
+const SUPABASE_URL = (typeof CONFIG !== 'undefined' && CONFIG.SUPABASE_URL) ? CONFIG.SUPABASE_URL : 'https://lzoloupwtqmjyupvofhh.supabase.co';
 const SUPABASE_KEY = (typeof CONFIG !== 'undefined' && CONFIG.SUPABASE_KEY && !CONFIG.SUPABASE_KEY.startsWith('YOUR_'))
   ? CONFIG.SUPABASE_KEY
-  : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6b2xvdXB3dHFtanl1cHZvZmhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NTMxMTEsImV4cCI6MjA4ODUyOTExMX0.tBcGc6KfPyjUmJngbLTBHv-GZkSoSoyWGXwlXFZ0ShE';
+  : 'YOUR_SUPABASE_KEY_HERE';
 const GOOGLE_CID   = (typeof CONFIG !== 'undefined' && CONFIG.GOOGLE_CID && !CONFIG.GOOGLE_CID.startsWith('YOUR_')) ? CONFIG.GOOGLE_CID : 'YOUR_GOOGLE_CID_HERE';
 const MAIN_FOLDER  = 'Sistem Pengurusan Mesyuarat DPMM Johor';
 const GROQ_KEY     = (typeof CONFIG !== 'undefined' && CONFIG.GROQ_KEY && !CONFIG.GROQ_KEY.startsWith('YOUR_')) ? CONFIG.GROQ_KEY : 'YOUR_GROQ_KEY_HERE';
+const WAHA_URL     = (typeof CONFIG !== 'undefined' && CONFIG.WAHA_URL) ? CONFIG.WAHA_URL : 'http://localhost:3000';
+const RESEND_API_KEY = (typeof CONFIG !== 'undefined' && CONFIG.RESEND_API_KEY && !CONFIG.RESEND_API_KEY.startsWith('YOUR_')) ? CONFIG.RESEND_API_KEY : 'YOUR_RESEND_API_KEY_HERE';
+const RESEND_FROM_EMAIL = (typeof CONFIG !== 'undefined' && CONFIG.RESEND_FROM_EMAIL) ? CONFIG.RESEND_FROM_EMAIL : 'noreply@yourdomain.com';
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 

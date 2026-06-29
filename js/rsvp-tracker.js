@@ -101,6 +101,22 @@ function renderRSVPDashboard() {
  * Create RSVP record for member
  */
 async function createMemberRSVP(eventId, memberId, memberName, status, channel = 'whatsapp') {
+  // Validate inputs
+  const nameResult = Validation.validateText(memberName, 'Nama', 2, 100);
+  if (!nameResult.valid) {
+    throw new Error(nameResult.error);
+  }
+  
+  // Check for SQL injection
+  if (Validation.detectSQLInjection(memberName)) {
+    throw new Error('Nama contains invalid characters');
+  }
+  
+  // Check for XSS
+  if (Validation.detectXSS(memberName)) {
+    throw new Error('Nama contains invalid characters');
+  }
+  
   try {
     const { data, error } = await supabase
       .from('DPMM_RSVP')
@@ -129,6 +145,22 @@ async function createMemberRSVP(eventId, memberId, memberName, status, channel =
  * Create RSVP record for non-member
  */
 async function createNonMemberRSVP(eventId, contactId, contactName, status, channel = 'email') {
+  // Validate inputs
+  const nameResult = Validation.validateText(contactName, 'Nama', 2, 100);
+  if (!nameResult.valid) {
+    throw new Error(nameResult.error);
+  }
+  
+  // Check for SQL injection
+  if (Validation.detectSQLInjection(contactName)) {
+    throw new Error('Nama contains invalid characters');
+  }
+  
+  // Check for XSS
+  if (Validation.detectXSS(contactName)) {
+    throw new Error('Nama contains invalid characters');
+  }
+  
   try {
     const { data, error } = await supabase
       .from('DPMM_RSVP')

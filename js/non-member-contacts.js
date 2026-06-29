@@ -5,6 +5,38 @@ let allNonMemberContacts = [];
 let filteredNonMemberContacts = [];
 
 /**
+ * Validate contact data using centralized validation module
+ */
+function validateContact(contact) {
+  const errors = [];
+  
+  // Validate nama
+  const namaResult = Validation.validateText(contact.nama, 'Nama', 2, 100);
+  if (!namaResult.valid) errors.push(namaResult.error);
+  
+  // Validate email
+  const emailResult = Validation.validateEmail(contact.emel);
+  if (!emailResult.valid) errors.push(emailResult.error);
+  
+  // Validate phone
+  const phoneResult = Validation.validatePhone(contact.telefon);
+  if (!phoneResult.valid) errors.push(phoneResult.error);
+  
+  // Check for SQL injection
+  if (Validation.detectSQLInjection(contact.nama)) errors.push('Nama contains invalid characters');
+  if (Validation.detectSQLInjection(contact.organization)) errors.push('Organization contains invalid characters');
+  
+  // Check for XSS
+  if (Validation.detectXSS(contact.nama)) errors.push('Nama contains invalid characters');
+  if (Validation.detectXSS(contact.organization)) errors.push('Organization contains invalid characters');
+  
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
+/**
  * Load non-member contacts from Supabase
  */
 async function loadNonMemberContacts() {
