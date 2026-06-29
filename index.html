@@ -7,6 +7,8 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config-local.js" onerror="console.info('config-local.js tidak dijumpai — menggunakan konfigurasi lalai.')"></script>
+<script src="js/csv-excel-parser.js"></script>
+<script src="js/non-member-contacts.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
@@ -551,6 +553,10 @@
         <span class="nav-icon">👥</span>
         <span class="nav-text">Senarai Maklumat Ahli</span>
       </div>
+      <div id="navNonMemberContacts" onclick="showTab('nonMemberContacts')" class="nav-item">
+        <span class="nav-icon">📇</span>
+        <span class="nav-text">Hubungan Luar</span>
+      </div>
       <div id="navJadual" onclick="showTab('jadual')" class="nav-item">
         <span class="nav-icon">📅</span>
         <span class="nav-text">Jadual Mesyuarat</span>
@@ -667,6 +673,84 @@
             </td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── NON-MEMBER CONTACTS TAB ── -->
+  <div id="tabNonMemberContacts" class="hidden fade-up" style="max-width:1600px;margin:0 auto;padding:1.5rem 1rem;">
+    <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:1.25rem;">
+      <div class="card" style="padding:1.5rem;">
+        <h3 style="font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:700;color:var(--blue-dark);margin-bottom:1.25rem;">Tambah Hubungan Luar</h3>
+        <div style="display:flex;flex-direction:column;gap:.875rem;">
+          <div>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Nama Penuh *</label>
+            <input id="nmcNama" type="text" placeholder="Nama penuh" class="inp">
+          </div>
+          <div>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Emel *</label>
+            <input id="nmcEmail" type="email" placeholder="contoh@syarikat.com" class="inp">
+          </div>
+          <div>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">No. Telefon *</label>
+            <input id="nmcPhone" type="tel" placeholder="+60123456789" class="inp">
+          </div>
+          <div>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Organisasi</label>
+            <input id="nmcOrganization" type="text" placeholder="Nama syarikat/organisasi" class="inp">
+          </div>
+          <button onclick="addNonMemberContact()" class="btn btn-blue" style="justify-content:center;">+ Tambah Hubungan</button>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <h3 style="font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:700;color:var(--blue-dark);margin-bottom:1.25rem;">Muat Naik CSV/Excel</h3>
+        <div style="display:flex;flex-direction:column;gap:.875rem;">
+          <div>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Fail CSV/Excel</label>
+            <input id="nmcFileUpload" type="file" accept=".csv,.xlsx,.xls" class="inp">
+            <p style="font-size:.72rem;color:var(--text-faint);margin-top:3px;">Format: nama, emel, telefon, organisasi</p>
+          </div>
+          <button onclick="uploadNonMemberContacts()" class="btn btn-green" style="justify-content:center;">📤 Muat Naik</button>
+          <div id="nmcUploadStatus" class="hidden" style="background:#DCFCE7;border:1.5px solid #86EFAC;color:#15803D;border-radius:8px;padding:.625rem .875rem;font-size:.8rem;font-weight:600;"></div>
+        </div>
+      </div>
+      <div class="card" style="padding:1.5rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+          <h3 style="font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:700;color:var(--blue-dark);">Senarai Hubungan Luar</h3>
+          <span id="nmcCount" style="font-size:.75rem;color:var(--text-soft);font-weight:500;">0 hubungan</span>
+        </div>
+        <div class="card" style="padding:.75rem;margin-bottom:1rem;">
+          <div style="display:flex;gap:.625rem;align-items:center;">
+            <div style="position:relative;flex:1;">
+              <svg style="width:14px;height:14px;position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-faint);pointer-events:none;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <input id="srchNmc" type="text" placeholder="Cari nama, emel atau organisasi..."
+                     onkeyup="filterNmcTable()" class="inp" style="padding-left:2rem;">
+            </div>
+          </div>
+        </div>
+        <div style="overflow:hidden;">
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;">
+              <thead>
+                <tr style="background:var(--blue-dark);">
+                  <th style="padding:.625rem 1rem;text-align:center;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">#</th>
+                  <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Nama</th>
+                  <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Emel</th>
+                  <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">No. Telefon</th>
+                  <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Organisasi</th>
+                  <th style="padding:.625rem 1rem;text-align:center;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Tindakan</th>
+                </tr>
+              </thead>
+              <tbody id="nmcTbody">
+                <tr><td colspan="6" style="text-align:center;padding:3.5rem;color:var(--text-faint);">
+                  <div class="spinner spinner-blue" style="margin:0 auto 10px;"></div>
+                  <p>Memuatkan data...</p>
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1520,7 +1604,7 @@ function doPrint(){
 function showTab(tab){
   // Guard: AJK/Staff cannot access admin tab under any circumstance
   if(tab==='admin' && !isAdmin()) return;
-  ['dash','senarai','kehadiran','admin','laporan','senaraiMesyuarat','templateWA','senaraiAhli','jadual'].forEach(t=>{
+  ['dash','senarai','kehadiran','admin','laporan','senaraiMesyuarat','templateWA','senaraiAhli','nonMemberContacts','jadual'].forEach(t=>{
     const el=document.getElementById('tab'+capitalize(t)),nav=document.getElementById('nav'+capitalize(t));
     if(el)el.classList.add('hidden');
     if(nav)nav.classList.remove('active');
@@ -1532,6 +1616,7 @@ function showTab(tab){
   if(tab==='senaraiMesyuarat'){renderSenaraiMesyuarat();}
   if(tab==='templateWA'){renderWaTemplates();}
   if(tab==='senaraiAhli'){loadAhliData();}
+  if(tab==='nonMemberContacts'){initNonMemberContactsTab();}
   if(tab==='jadual'){renderCalendar();}
   if(tab==='admin'){showAdminSub('Mesyuarat');loadUsers();}
   if(tab==='senarai'){loadKehadiran();renderTable();renderTplList();}
