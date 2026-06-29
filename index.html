@@ -10,6 +10,7 @@
 <script src="js/csv-excel-parser.js"></script>
 <script src="js/non-member-contacts.js"></script>
 <script src="js/rsvp-tracker.js"></script>
+<script src="js/qr-generator.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
@@ -1484,6 +1485,37 @@ document.getElementById('waTplImage').addEventListener('change', function(e){
   }
 });
 
+/**
+ * Generate QR code for meeting
+ */
+async function generateEventQRCodeForMeeting(meetingId){
+  try{
+    const container = document.getElementById('eventQRCodeContainer');
+    container.innerHTML = '<div class="spinner spinner-blue" style="margin:0 auto;"></div><p style="text-align:center;color:var(--text-soft);margin-top:.5rem;">Menjana QR code...</p>';
+    
+    const { dataUrl, token } = await generateAndDisplayEventQR(meetingId, 'eventQRCodeContainer');
+    
+    // Add download button
+    container.innerHTML += `
+      <div style="text-align:center;margin-top:1rem;">
+        <button onclick="downloadQRCode('${dataUrl}', 'qr-code-${meetingId}.png')" class="btn btn-green" style="justify-content:center;font-size:.85rem;">📥 Muat Turun QR Code</button>
+      </div>
+    `;
+    
+    // Store token in database
+    await supabase
+      .from('DPMM_MESYUARAT')
+      .update({ qr_token: token })
+      .eq('mesyuarat_id', meetingId);
+    
+    toast('✅ QR code berjaya dijana!');
+  }catch(error){
+    console.error('Error generating QR code:', error);
+    document.getElementById('eventQRCodeContainer').innerHTML = '<p style="text-align:center;color:var(--red);">Ralat menjana QR code</p>';
+    toast('❌ Gagal menjana QR code: '+error.message,'err');
+  }
+}
+
 function editTpl(id){
   const t=waTemplates.find(x=>x.id===id); if(!t)return;
   document.getElementById('waTplId').value=t.id;
@@ -1812,6 +1844,20 @@ function openMeetingDetail(meetId){
     <div id="rsvpDashboard" class="card" style="padding:1.5rem;margin-bottom:1rem;">
       <h4 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;color:var(--blue-dark);margin-bottom:1rem;">Tracking RSVP</h4>
       <p style="color:var(--text-soft);font-size:.85rem;">Memuatkan data RSVP...</p>
+    </div>
+    
+    <!-- QR Code Section -->
+    <div class="card" style="padding:1.5rem;margin-bottom:1rem;">
+      <h4 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;color:var(--blue-dark);margin-bottom:1rem;">QR Code untuk RSVP & Butiran Acara</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+        <div>
+          <p style="color:var(--text-soft);font-size:.85rem;margin-bottom:1rem;">Jana QR code untuk dikongsi melalui WhatsApp, emel, atau bahan cetak.</p>
+          <button onclick="generateEventQRCodeForMeeting('${meet.mesyuarat_id}')" class="btn btn-blue" style="justify-content:center;">📱 Jana QR Code</button>
+        </div>
+        <div id="eventQRCodeContainer" style="display:flex;justify-content:center;align-items:center;min-height:200px;background:var(--blue-light);border-radius:8px;border:2px dashed var(--blue-pale);">
+          <p style="color:var(--text-faint);font-size:.85rem;">QR code akan dipaparkan di sini</p>
+        </div>
+      </div>
     </div>
     
     <!-- Attendance Table -->
