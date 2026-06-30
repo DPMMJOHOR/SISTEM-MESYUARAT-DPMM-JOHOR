@@ -1,8 +1,19 @@
 -- Add bureau column to DPMM_USERS table
 ALTER TABLE DPMM_USERS
-ADD COLUMN IF NOT EXISTS bureau TEXT,
-ADD CONSTRAINT IF NOT EXISTS check_bureau_value 
-  CHECK (bureau IN ('Biro Professional', 'Biro Kontraktor', 'Biro International Trade', NULL));
+ADD COLUMN IF NOT EXISTS bureau TEXT;
+
+-- Add check constraint for bureau values (if not exists)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'check_bureau_value'
+  ) THEN
+    ALTER TABLE DPMM_USERS
+    ADD CONSTRAINT check_bureau_value 
+      CHECK (bureau IN ('Biro Professional', 'Biro Kontraktor', 'Biro International Trade', NULL));
+  END IF;
+END $$;
 
 -- Add index for bureau queries
 CREATE INDEX IF NOT EXISTS idx_dpmm_users_bureau 
@@ -10,9 +21,20 @@ ON DPMM_USERS(bureau);
 
 -- Add bureau column to DPMM_NON_MEMBER_CONTACTS table
 ALTER TABLE DPMM_NON_MEMBER_CONTACTS
-ADD COLUMN IF NOT EXISTS bureau TEXT,
-ADD CONSTRAINT IF NOT EXISTS check_non_member_bureau_value 
-  CHECK (bureau IN ('Biro Professional', 'Biro Kontraktor', 'Biro International Trade', NULL));
+ADD COLUMN IF NOT EXISTS bureau TEXT;
+
+-- Add check constraint for bureau values (if not exists)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'check_non_member_bureau_value'
+  ) THEN
+    ALTER TABLE DPMM_NON_MEMBER_CONTACTS
+    ADD CONSTRAINT check_non_member_bureau_value 
+      CHECK (bureau IN ('Biro Professional', 'Biro Kontraktor', 'Biro International Trade', NULL));
+  END IF;
+END $$;
 
 -- Add index for bureau queries on non-member contacts
 CREATE INDEX IF NOT EXISTS idx_dpmm_non_member_contacts_bureau 
