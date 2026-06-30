@@ -26,7 +26,7 @@ ADD COLUMN IF NOT EXISTS buku_mesyuarat_file_type TEXT CHECK (buku_mesyuarat_fil
 -- ── DPMM_RSVP (unified RSVP tracking) ───────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS DPMM_RSVP (
   id                  BIGSERIAL PRIMARY KEY,
-  event_id            TEXT REFERENCES DPMM_MESYUARAT(event_id) ON DELETE CASCADE,
+  event_id            TEXT REFERENCES DPMM_MESYUARAT(mesyuarat_id) ON DELETE CASCADE,
   attendee_type       TEXT CHECK (attendee_type IN ('member','non-member')),
   attendee_identifier TEXT NOT NULL,
   status              TEXT CHECK (status IN ('Saya Hadir','Saya Tidak Hadir','Tidak Pasti','Belum Dihubungi')),
@@ -66,7 +66,7 @@ ALTER TABLE DPMM_TEMPLATES ADD COLUMN IF NOT EXISTS image_url TEXT;
 -- ── DPMM_REMINDERS (automated reminder scheduling) ───────────────────────────────
 CREATE TABLE IF NOT EXISTS DPMM_REMINDERS (
   id               BIGSERIAL PRIMARY KEY,
-  event_id         TEXT REFERENCES DPMM_MESYUARAT(event_id) ON DELETE CASCADE,
+  event_id         TEXT REFERENCES DPMM_MESYUARAT(mesyuarat_id) ON DELETE CASCADE,
   scheduled_time   TIMESTAMPTZ NOT NULL,
   recipient_filter TEXT CHECK (recipient_filter IN ('all','non-responders','custom')),
   template_id      BIGINT REFERENCES DPMM_TEMPLATES(id),
@@ -80,7 +80,7 @@ CREATE POLICY "authenticated reminders" ON DPMM_REMINDERS FOR ALL USING (auth.ui
 -- ── DPMM_BUKU_MESYUARAT_ACCESS_LOG (access logging for Buku Mesyuarat) ─────────────
 CREATE TABLE IF NOT EXISTS DPMM_BUKU_MESYUARAT_ACCESS_LOG (
   id               BIGSERIAL PRIMARY KEY,
-  mesyuarat_id     TEXT REFERENCES DPMM_MESYUARAT(event_id) ON DELETE CASCADE,
+  mesyuarat_id     TEXT REFERENCES DPMM_MESYUARAT(mesyuarat_id) ON DELETE CASCADE,
   no_ahli          TEXT,
   access_timestamp TIMESTAMPTZ DEFAULT NOW(),
   access_type      TEXT CHECK (access_type IN ('view','qr')),

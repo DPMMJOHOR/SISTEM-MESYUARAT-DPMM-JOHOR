@@ -21,11 +21,11 @@ INSERT INTO DPMM_RSVP (
   check_in_method,
   created_at
 )
-SELECT 
+SELECT
   mesyuarat_id AS event_id,
   'member' AS attendee_type,
   no_ahli AS attendee_identifier,
-  CASE 
+  CASE
     WHEN status = 'Hadir' THEN 'Saya Hadir'
     WHEN status = 'Tidak Hadir' THEN 'Saya Tidak Hadir'
     WHEN status = 'Tidak Pasti' THEN 'Tidak Pasti'
