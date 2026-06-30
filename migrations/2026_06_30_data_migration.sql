@@ -47,12 +47,12 @@ SELECT 'DPMM_RSVP count' AS table_name, COUNT(*) AS count FROM DPMM_RSVP;
 SELECT 'DPMM_KEHADIRAN count' AS table_name, COUNT(*) AS count FROM DPMM_KEHADIRAN;
 
 -- Verify event_type set correctly
-SELECT event_type, COUNT(*) AS count 
-FROM DPMM_MESYUARAT 
+SELECT event_type, COUNT(*) AS count
+FROM DPMM_MESYUARAT
 GROUP BY event_type;
 
 -- Verify foreign key relationships
-SELECT e.event_id, e.nama, COUNT(r.id) AS rsvp_count 
-FROM DPMM_MESYUARAT e 
-LEFT JOIN DPMM_RSVP r ON e.event_id = r.event_id 
-GROUP BY e.event_id, e.nama;
+SELECT e.mesyuarat_id, e.nama, COUNT(r.id) AS rsvp_count
+FROM DPMM_MESYUARAT e
+LEFT JOIN DPMM_RSVP r ON e.mesyuarat_id = r.event_id
+GROUP BY e.mesyuarat_id, e.nama;
