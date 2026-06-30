@@ -118,19 +118,19 @@ CREATE POLICY rsvp_select_policy ON DPMM_RSVP
   USING (
     -- Super admin can see all RSVPs
     EXISTS (
-      SELECT 1 FROM DPMM_USERS 
-      WHERE user_id = auth.uid() 
+      SELECT 1 FROM DPMM_USERS
+      WHERE user_id = auth.uid()
       AND peranan = 'super_admin'
     )
     OR
     -- Bureau admin can only see RSVPs for their bureau's events
     EXISTS (
       SELECT 1 FROM DPMM_MESYUARAT e
-      WHERE e.event_id = DPMM_RSVP.event_id
+      WHERE e.mesyuarat_id = DPMM_RSVP.event_id
       AND (
         EXISTS (
-          SELECT 1 FROM DPMM_USERS 
-          WHERE user_id = auth.uid() 
+          SELECT 1 FROM DPMM_USERS
+          WHERE user_id = auth.uid()
           AND peranan IN ('admin', 'staff')
           AND bureau = e.bureau
         )
