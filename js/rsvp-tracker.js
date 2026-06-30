@@ -1,5 +1,6 @@
 // RSVP Tracking System
 // Handles unified RSVP for members (WhatsApp) and non-members (Email)
+// Updated for unified schema (DPMM_RSVP table)
 
 let allRSVPs = [];
 let currentEventRSVPs = [];
@@ -13,7 +14,7 @@ async function loadEventRSVPs(eventId) {
       .from('DPMM_RSVP')
       .select('*')
       .eq('event_id', eventId)
-      .order('responded_at', { ascending: false });
+      .order('response_timestamp', { ascending: false, nullsLast: true });
     
     if (error) throw error;
     
@@ -31,12 +32,12 @@ function renderRSVPDashboard() {
   const container = document.getElementById('rsvpDashboard');
   if (!container) return;
   
-  // Calculate statistics
+  // Calculate statistics (using unified status values)
   const stats = {
-    confirmed: currentEventRSVPs.filter(r => r.status === 'confirmed').length,
-    declined: currentEventRSVPs.filter(r => r.status === 'declined').length,
-    tentative: currentEventRSVPs.filter(r => r.status === 'tentative').length,
-    pending: currentEventRSVPs.filter(r => r.status === 'pending').length,
+    confirmed: currentEventRSVPs.filter(r => r.status === 'Saya Hadir').length,
+    declined: currentEventRSVPs.filter(r => r.status === 'Saya Tidak Hadir').length,
+    tentative: currentEventRSVPs.filter(r => r.status === 'Tidak Pasti').length,
+    pending: currentEventRSVPs.filter(r => r.status === 'Belum Dihubungi').length,
     total: currentEventRSVPs.length
   };
   
@@ -44,11 +45,11 @@ function renderRSVPDashboard() {
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem;">
       <div class="card kpi-card kpi-green" style="padding:1.25rem;">
         <div style="font-size:2rem;font-weight:700;color:#16A34A;">${stats.confirmed}</div>
-        <div style="font-size:.75rem;color:var(--text-soft);text-transform:uppercase;letter-spacing:1px;font-weight:700;">Sahkan Hadir</div>
+        <div style="font-size:.75rem;color:var(--text-soft);text-transform:uppercase;letter-spacing:1px;font-weight:700;">Saya Hadir</div>
       </div>
       <div class="card kpi-card kpi-red" style="padding:1.25rem;">
         <div style="font-size:2rem;font-weight:700;color:#EF4444;">${stats.declined}</div>
-        <div style="font-size:.75rem;color:var(--text-soft);text-transform:uppercase;letter-spacing:1px;font-weight:700;">Tidak Hadir</div>
+        <div style="font-size:.75rem;color:var(--text-soft);text-transform:uppercase;letter-spacing:1px;font-weight:700;">Saya Tidak Hadir</div>
       </div>
       <div class="card kpi-card kpi-amber" style="padding:1.25rem;">
         <div style="font-size:2rem;font-weight:700;color:#F59E0B;">${stats.tentative}</div>
@@ -56,7 +57,7 @@ function renderRSVPDashboard() {
       </div>
       <div class="card kpi-card kpi-slate" style="padding:1.25rem;">
         <div style="font-size:2rem;font-weight:700;color:#94A3B8;">${stats.pending}</div>
-        <div style="font-size:.75rem;color:var(--text-soft);text-transform:uppercase;letter-spacing:1px;font-weight:700;">Belum Respons</div>
+        <div style="font-size:.75rem;color:var(--text-soft);text-transform:uppercase;letter-spacing:1px;font-weight:700;">Belum Dihubungi</div>
       </div>
     </div>
     
@@ -66,27 +67,33 @@ function renderRSVPDashboard() {
         <table style="width:100%;border-collapse:collapse;">
           <thead>
             <tr style="background:var(--blue-dark);">
-              <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Nama</th>
+              <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">ID Peserta</th>
               <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Jenis</th>
               <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Saluran</th>
               <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Status</th>
               <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Tarikh Respons</th>
+              <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Check-in</th>
             </tr>
           </thead>
           <tbody>
             ${currentEventRSVPs.length === 0 ? 
-              '<tr><td colspan="5" style="text-align:center;padding:3.5rem;color:var(--text-faint);">Tiada RSVP lagi.</td></tr>' :
+              '<tr><td colspan="6" style="text-align:center;padding:3.5rem;color:var(--text-faint);">Tiada RSVP lagi.</td></tr>' :
               currentEventRSVPs.map(rsvp => `
                 <tr class="trow">
-                  <td style="padding:.625rem 1rem;font-size:.85rem;font-weight:600;">${escapeHtml(rsvp.attendee_name)}</td>
+                  <td style="padding:.625rem 1rem;font-size:.85rem;font-weight:600;">${escapeHtml(rsvp.attendee_identifier)}</td>
                   <td style="padding:.625rem 1rem;font-size:.85rem;">${rsvp.attendee_type === 'member' ? 'Ahli' : 'Hubungan Luar'}</td>
-                  <td style="padding:.625rem 1rem;font-size:.85rem;">${rsvp.channel === 'whatsapp' ? '💬 WhatsApp' : '📧 Emel'}</td>
+                  <td style="padding:.625rem 1rem;font-size:.85rem;">${rsvp.channel === 'WhatsApp' ? '💬 WhatsApp' : '📧 Emel'}</td>
                   <td style="padding:.625rem 1rem;">
-                    <span class="${rsvp.status === 'confirmed' ? 'badge-hadir' : rsvp.status === 'declined' ? 'badge-tidak' : rsvp.status === 'tentative' ? 'badge-belum' : 'badge-lain'}" style="font-size:.68rem;padding:.2rem .5rem;border-radius:999px;font-weight:700;">
-                      ${rsvp.status === 'confirmed' ? 'Hadir' : rsvp.status === 'declined' ? 'Tidak Hadir' : rsvp.status === 'tentative' ? 'Tidak Pasti' : 'Belum'}
+                    <span class="${rsvp.status === 'Saya Hadir' ? 'badge-hadir' : rsvp.status === 'Saya Tidak Hadir' ? 'badge-tidak' : rsvp.status === 'Tidak Pasti' ? 'badge-belum' : 'badge-lain'}" style="font-size:.68rem;padding:.2rem .5rem;border-radius:999px;font-weight:700;">
+                      ${rsvp.status}
                     </span>
                   </td>
-                  <td style="padding:.625rem 1rem;font-size:.75rem;color:var(--text-soft);">${rsvp.responded_at ? formatDate(rsvp.responded_at) : '-'}</td>
+                  <td style="padding:.625rem 1rem;font-size:.75rem;color:var(--text-soft);">${rsvp.response_timestamp ? formatDate(rsvp.response_timestamp) : '-'}</td>
+                  <td style="padding:.625rem 1rem;font-size:.85rem;">
+                    ${rsvp.checked_in ? 
+                      '<span style="color:#16A34A;font-weight:700;">✓ Check-in</span>' : 
+                      '<span style="color:var(--text-faint);">-</span>'}
+                  </td>
                 </tr>
               `).join('')
             }
@@ -100,21 +107,11 @@ function renderRSVPDashboard() {
 /**
  * Create RSVP record for member
  */
-async function createMemberRSVP(eventId, memberId, memberName, status, channel = 'whatsapp') {
-  // Validate inputs
-  const nameResult = Validation.validateText(memberName, 'Nama', 2, 100);
-  if (!nameResult.valid) {
-    throw new Error(nameResult.error);
-  }
-  
-  // Check for SQL injection
-  if (Validation.detectSQLInjection(memberName)) {
-    throw new Error('Nama contains invalid characters');
-  }
-  
-  // Check for XSS
-  if (Validation.detectXSS(memberName)) {
-    throw new Error('Nama contains invalid characters');
+async function createMemberRSVP(eventId, memberId, status, channel = 'WhatsApp') {
+  // Validate status
+  const validStatuses = ['Saya Hadir', 'Saya Tidak Hadir', 'Tidak Pasti', 'Belum Dihubungi'];
+  if (!validStatuses.includes(status)) {
+    throw new Error('Status tidak sah');
   }
   
   try {
@@ -122,14 +119,13 @@ async function createMemberRSVP(eventId, memberId, memberName, status, channel =
       .from('DPMM_RSVP')
       .upsert({
         event_id: eventId,
-        attendee_id: memberId,
-        attendee_name: memberName,
         attendee_type: 'member',
-        channel: channel,
+        attendee_identifier: memberId,
         status: status,
-        responded_at: new Date().toISOString()
+        channel: channel,
+        response_timestamp: new Date().toISOString()
       }, {
-        onConflict: 'event_id,attendee_id'
+        onConflict: 'event_id,attendee_identifier'
       });
     
     if (error) throw error;
@@ -144,21 +140,11 @@ async function createMemberRSVP(eventId, memberId, memberName, status, channel =
 /**
  * Create RSVP record for non-member
  */
-async function createNonMemberRSVP(eventId, contactId, contactName, status, channel = 'email') {
-  // Validate inputs
-  const nameResult = Validation.validateText(contactName, 'Nama', 2, 100);
-  if (!nameResult.valid) {
-    throw new Error(nameResult.error);
-  }
-  
-  // Check for SQL injection
-  if (Validation.detectSQLInjection(contactName)) {
-    throw new Error('Nama contains invalid characters');
-  }
-  
-  // Check for XSS
-  if (Validation.detectXSS(contactName)) {
-    throw new Error('Nama contains invalid characters');
+async function createNonMemberRSVP(eventId, contactId, status, channel = 'Email') {
+  // Validate status
+  const validStatuses = ['Saya Hadir', 'Saya Tidak Hadir', 'Tidak Pasti', 'Belum Dihubungi'];
+  if (!validStatuses.includes(status)) {
+    throw new Error('Status tidak sah');
   }
   
   try {
@@ -166,14 +152,13 @@ async function createNonMemberRSVP(eventId, contactId, contactName, status, chan
       .from('DPMM_RSVP')
       .upsert({
         event_id: eventId,
-        attendee_id: contactId,
-        attendee_name: contactName,
-        attendee_type: 'non_member',
-        channel: channel,
+        attendee_type: 'non-member',
+        attendee_identifier: contactId,
         status: status,
-        responded_at: new Date().toISOString()
+        channel: channel,
+        response_timestamp: new Date().toISOString()
       }, {
-        onConflict: 'event_id,attendee_id'
+        onConflict: 'event_id,attendee_identifier'
       });
     
     if (error) throw error;

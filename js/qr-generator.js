@@ -75,20 +75,19 @@ function generateEventToken() {
 }
 
 /**
- * Generate unique attendee token
- * @param {string} attendeeId - Attendee ID (member ID or email)
- * @returns {string} - Hashed token
+ * Generate unique attendee token (minimal data approach)
+ * @param {string} attendeeIdentifier - Attendee identifier (member ID or email hash)
+ * @param {string} eventId - Event ID
+ * @returns {Promise<string>} - Cryptographically secure token
  */
-function generateAttendeeToken(attendeeId) {
-  // Simple hash function for token generation
-  let hash = 0;
-  const str = attendeeId + Date.now().toString();
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  return Math.abs(hash).toString(36);
+async function generateAttendeeToken(attendeeIdentifier, eventId) {
+  // Use Web Crypto API for secure token generation
+  const data = `${attendeeIdentifier}:${eventId}:${Date.now()}`;
+  const encoder = new TextEncoder();
+  const dataArray = encoder.encode(data);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', dataArray);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 /**

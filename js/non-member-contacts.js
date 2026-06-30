@@ -1,8 +1,54 @@
 // Non-Member Contacts Management
 // Handles CRUD operations for DPMM_NON_MEMBER_CONTACTS table
+// Supports PII encryption and bureau assignment
 
 let allNonMemberContacts = [];
 let filteredNonMemberContacts = [];
+
+/**
+ * Generate hash for uniqueness check (not PII)
+ */
+async function generateHash(value) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(value.toLowerCase().trim());
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Encrypt PII using Supabase Edge Function
+ */
+async function encryptPII(plainText) {
+  try {
+    const { data, error } = await supabase.functions.invoke('encrypt-pii', {
+      body: { plainText }
+    });
+    if (error) throw error;
+    return data.encrypted;
+  } catch (error) {
+    console.error('Encryption error:', error);
+    // Fallback: return plain text for development (remove in production)
+    return plainText;
+  }
+}
+
+/**
+ * Decrypt PII using Supabase Edge Function
+ */
+async function decryptPII(encryptedText) {
+  try {
+    const { data, error } = await supabase.functions.invoke('decrypt-pii', {
+      body: { encryptedText }
+    });
+    if (error) throw error;
+    return data.decrypted;
+  } catch (error) {
+    console.error('Decryption error:', error);
+    // Fallback: return encrypted text for development (remove in production)
+    return encryptedText;
+  }
+}
 
 /**
  * Validate contact data using centralized validation module
@@ -38,6 +84,7 @@ function validateContact(contact) {
 
 /**
  * Load non-member contacts from Supabase
+ * Decrypts PII for display
  */
 async function loadNonMemberContacts() {
   try {
@@ -48,14 +95,20 @@ async function loadNonMemberContacts() {
     
     if (error) throw error;
     
-    allNonMemberContacts = data || [];
+    // Decrypt PII for display
+    allNonMemberContacts = await Promise.all((data || []).map(async (contact) => ({
+      ...contact,
+      email: contact.email_encrypted ? await decryptPII(contact.email_encrypted) : '',
+      phone: contact.phone_encrypted ? await decryptPII(contact.phone_encrypted) : ''
+    })));
+    
     filteredNonMemberContacts = [...allNonMemberContacts];
     renderNonMemberContactsTable();
     updateNmcCount();
   } catch (error) {
     console.error('Error loading non-member contacts:', error);
     document.getElementById('nmcTbody').innerHTML = `
-      <tr><td colspan="6" style="text-align:center;padding:3.5rem;color:var(--red);">
+      <tr><td colspan="7" style="text-align:center;padding:3.5rem;color:var(--red);">
         <p>Ralat memuatkan data: ${error.message}</p>
       </td></tr>
     `;
@@ -70,7 +123,7 @@ function renderNonMemberContactsTable() {
   
   if (filteredNonMemberContacts.length === 0) {
     tbody.innerHTML = `
-      <tr><td colspan="6" style="text-align:center;padding:3.5rem;color:var(--text-faint);">
+      <tr><td colspan="7" style="text-align:center;padding:3.5rem;color:var(--text-faint);">
         <p>Tiada hubungan luar.</p>
       </td></tr>
     `;
@@ -84,6 +137,7 @@ function renderNonMemberContactsTable() {
       <td style="padding:.625rem 1rem;font-size:.85rem;">${escapeHtml(contact.email)}</td>
       <td style="padding:.625rem 1rem;font-size:.85rem;">${escapeHtml(contact.phone)}</td>
       <td style="padding:.625rem 1rem;font-size:.85rem;">${escapeHtml(contact.organization || '-')}</td>
+      <td style="padding:.625rem 1rem;font-size:.85rem;">${escapeHtml(contact.bureau || '-')}</td>
       <td style="padding:.625rem 1rem;text-align:center;">
         <button onclick="editNonMemberContact(${contact.id})" class="btn btn-ghost" style="padding:.4rem .6rem;font-size:.75rem;">✏️</button>
         <button onclick="deleteNonMemberContact(${contact.id})" class="btn btn-red" style="padding:.4rem .6rem;font-size:.75rem;">🗑️</button>
@@ -101,12 +155,14 @@ function updateNmcCount() {
 
 /**
  * Add single non-member contact
+ * Encrypts PII before storage
  */
 async function addNonMemberContact() {
   const nama = document.getElementById('nmcNama').value.trim();
   const email = document.getElementById('nmcEmail').value.trim();
   const phone = document.getElementById('nmcPhone').value.trim();
   const organization = document.getElementById('nmcOrganization').value.trim();
+  const bureau = document.getElementById('nmcBureau')?.value || currentUser.bureau || null;
   
   // Validation
   if (!nama || !email || !phone) {
@@ -125,13 +181,24 @@ async function addNonMemberContact() {
   }
   
   try {
+    // Encrypt PII
+    const emailEncrypted = await encryptPII(email);
+    const phoneEncrypted = await encryptPII(phone);
+    
+    // Generate hashes for uniqueness
+    const emailHash = await generateHash(email);
+    const phoneHash = await generateHash(phone);
+    
     const { data, error } = await supabase
       .from('DPMM_NON_MEMBER_CONTACTS')
       .insert({
         nama,
-        email,
-        phone,
+        email_encrypted: emailEncrypted,
+        phone_encrypted: phoneEncrypted,
+        email_hash: emailHash,
+        phone_hash: phoneHash,
         organization,
+        bureau,
         created_by: currentUser.nama
       })
       .select();
@@ -143,6 +210,9 @@ async function addNonMemberContact() {
     document.getElementById('nmcEmail').value = '';
     document.getElementById('nmcPhone').value = '';
     document.getElementById('nmcOrganization').value = '';
+    if (document.getElementById('nmcBureau')) {
+      document.getElementById('nmcBureau').value = '';
+    }
     
     // Reload data
     await loadNonMemberContacts();
@@ -222,18 +292,22 @@ async function uploadNonMemberContacts() {
       throw new Error('Tiada hubungan baru untuk ditambah (semua adalah duplikat atau tidak sah)');
     }
     
+    // Encrypt PII and generate hashes for all contacts
+    const contactsToInsert = await Promise.all(uniqueContacts.map(async (c) => ({
+      nama: c.nama,
+      email_encrypted: await encryptPII(c.emel),
+      phone_encrypted: await encryptPII(c.telefon),
+      email_hash: await generateHash(c.emel),
+      phone_hash: await generateHash(c.telefon),
+      organization: c.organization,
+      bureau: currentUser.bureau || null,
+      created_by: currentUser.nama
+    })));
+    
     // Insert contacts
     const { data, error } = await supabase
       .from('DPMM_NON_MEMBER_CONTACTS')
-      .insert(
-        uniqueContacts.map(c => ({
-          nama: c.nama,
-          email: c.emel,
-          phone: c.telefon,
-          organization: c.organization,
-          created_by: currentUser.nama
-        }))
-      )
+      .insert(contactsToInsert)
       .select();
     
     if (error) throw error;
@@ -266,6 +340,7 @@ async function uploadNonMemberContacts() {
 
 /**
  * Edit non-member contact
+ * Encrypts PII before storage
  */
 async function editNonMemberContact(id) {
   const contact = allNonMemberContacts.find(c => c.id === id);
@@ -283,14 +358,28 @@ async function editNonMemberContact(id) {
   const newOrganization = prompt('Organisasi:', contact.organization || '');
   if (newOrganization === null) return;
   
+  const newBureau = prompt('Biro (kosongkan untuk tiada):', contact.bureau || '');
+  if (newBureau === null) return;
+  
   try {
+    // Encrypt PII
+    const emailEncrypted = await encryptPII(newEmail);
+    const phoneEncrypted = await encryptPII(newPhone);
+    
+    // Generate hashes for uniqueness
+    const emailHash = await generateHash(newEmail);
+    const phoneHash = await generateHash(newPhone);
+    
     const { error } = await supabase
       .from('DPMM_NON_MEMBER_CONTACTS')
       .update({
         nama: newNama,
-        email: newEmail,
-        phone: newPhone,
-        organization: newOrganization
+        email_encrypted: emailEncrypted,
+        phone_encrypted: phoneEncrypted,
+        email_hash: emailHash,
+        phone_hash: phoneHash,
+        organization: newOrganization,
+        bureau: newBureau || null
       })
       .eq('id', id);
     

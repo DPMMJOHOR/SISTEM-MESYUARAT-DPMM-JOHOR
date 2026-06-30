@@ -56,6 +56,41 @@ const WAHA = {
       return { success: false, error: error.message };
     }
   },
+
+  /**
+   * Send image message via WAHA
+   * @param {string} chatId - WhatsApp chat ID (e.g., 60123456789@c.us)
+   * @param {string} imageUrl - URL of the image to send
+   * @param {string} caption - Image caption (optional)
+   * @param {string} sessionId - WAHA session ID (default: 'default')
+   */
+  async sendImageMessage(chatId, imageUrl, caption = '', sessionId = 'default') {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/sendImage`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          session: sessionId,
+          chatId: chatId,
+          url: imageUrl,
+          caption: caption,
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to send image');
+      }
+      
+      return { success: true, data };
+    } catch (error) {
+      console.error('WAHA sendImage failed:', error);
+      return { success: false, error: error.message };
+    }
+  },
   
   /**
    * Send WhatsApp blast to multiple recipients

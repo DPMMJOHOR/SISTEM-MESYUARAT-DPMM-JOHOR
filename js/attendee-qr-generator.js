@@ -1,5 +1,6 @@
 // Attendee QR Code Generator for Check-In
 // Generates unique QR codes for confirmed attendees
+// Updated for unified DPMM_RSVP schema
 
 /**
  * Generate QR codes for all confirmed attendees of an event
@@ -8,12 +9,12 @@
  */
 async function generateAttendeeQRCodes(eventId) {
   try {
-    // Get confirmed attendees (status = 'confirmed')
+    // Get confirmed attendees (status = 'Saya Hadir')
     const { data: rsvps, error } = await supabase
       .from('DPMM_RSVP')
       .select('*')
       .eq('event_id', eventId)
-      .eq('status', 'confirmed');
+      .eq('status', 'Saya Hadir');
     
     if (error) throw error;
     
@@ -25,46 +26,37 @@ async function generateAttendeeQRCodes(eventId) {
     const baseUrl = window.location.origin + '/check-in.html';
     
     for (const rsvp of rsvps) {
-      // Generate token if not exists
-      let token = rsvp.attendee_token;
-      if (!token) {
-        token = generateAttendeeToken(rsvp.user_id || rsvp.non_member_contact_id);
-        
-        // Update RSVP with token
-        await supabase
-          .from('DPMM_RSVP')
-          .update({ attendee_token: token })
-          .eq('id', rsvp.id);
-      }
+      // Generate token on the fly (no storage in DB for security)
+      const token = await generateAttendeeToken(rsvp.attendee_identifier, eventId);
       
       // Generate QR code
       const dataUrl = await generateAttendeeQRCode(eventId, token, baseUrl);
       
-      // Get attendee name
+      // Get attendee name based on type
       let attendeeName = '';
-      if (rsvp.user_id) {
-        // Get member name
+      if (rsvp.attendee_type === 'member') {
+        // Get member name from DPMM_USERS
         const { data: member } = await supabase
           .from('DPMM_USERS')
           .select('nama')
-          .eq('user_id', rsvp.user_id)
+          .eq('no_ahli', rsvp.attendee_identifier)
           .single();
-        attendeeName = member?.nama || 'Unknown';
-      } else if (rsvp.non_member_contact_id) {
-        // Get non-member name
+        attendeeName = member?.nama || rsvp.attendee_identifier;
+      } else {
+        // Get non-member name from DPMM_NON_MEMBER_CONTACTS
         const { data: contact } = await supabase
           .from('DPMM_NON_MEMBER_CONTACTS')
           .select('nama')
-          .eq('id', rsvp.non_member_contact_id)
+          .eq('id', rsvp.attendee_identifier)
           .single();
-        attendeeName = contact?.nama || 'Unknown';
+        attendeeName = contact?.nama || rsvp.attendee_identifier;
       }
       
       qrCodes.push({
         rsvpId: rsvp.id,
-        attendeeId: rsvp.user_id || rsvp.non_member_contact_id,
+        attendeeIdentifier: rsvp.attendee_identifier,
         attendeeName: attendeeName,
-        attendeeType: rsvp.user_id ? 'member' : 'non_member',
+        attendeeType: rsvp.attendee_type,
         token: token,
         dataUrl: dataUrl
       });
