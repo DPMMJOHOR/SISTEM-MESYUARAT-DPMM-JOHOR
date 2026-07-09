@@ -3,11 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; connect-src 'self' https://lzoloupwtqmjyupvofhh.supabase.co https://api.groq.com; img-src 'self' data: https:;">
+<!-- CSP: Report-only mode for testing. Nonce-based CSP requires server-side rendering (not available on GitHub Pages static hosting).
+     Current CSP uses SRI for external scripts and maintains unsafe-inline for static hosting constraints.
+     Full CSP hardening requires migration to server-side rendering or Edge Functions serving HTML.
+     
+     CSRF Protection: Double-submit cookie pattern requires server-side cookie management (not available on static hosting).
+     CSRF protection requires migration to server-side rendering or Edge Functions serving HTML.
+     
+     HSTS Header: Requires server-side configuration (not available on GitHub Pages static hosting).
+     HSTS enforcement requires migration to server-side rendering or Edge Functions serving HTML.
+     
+     HTTPS Redirect: GitHub Pages automatically enforces HTTPS - no additional configuration needed. -->
+<meta http-equiv="Content-Security-Policy-Report-Only" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; connect-src 'self' https://lzoloupwtqmjyupvofhh.supabase.co https://api.groq.com; img-src 'self' data: https:; report-uri csp-report-endpoint">
 <title>Sistem Pengurusan Mesyuarat — DPMM Negeri Johor</title>
-<script src="https://cdn.tailwindcss.com" integrity="sha384-..." crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" integrity="sha384-..." crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js" integrity="sha384-..." crossorigin="anonymous"></script>
+<script src="https://cdn.tailwindcss.com" integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" integrity="sha384-sgcvElP/LlNRtORGYFLO/9K/bENcpJK19HgvqslWXog6d8f/Va4TpltGiBlGntCM" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js" integrity="sha384-qGFE4FIJLgCFuYs3nzg39XpCtvT5AZUhaBdjB3e1+vpKQa03AkyWOyBSFb9OcQ/g" crossorigin="anonymous"></script>
 <script src="config-local.js" onerror="console.info('config-local.js tidak dijumpai — menggunakan konfigurasi lalai.')"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
