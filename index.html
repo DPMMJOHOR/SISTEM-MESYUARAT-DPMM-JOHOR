@@ -3,9 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; connect-src 'self' https://lzoloupwtqmjyupvofhh.supabase.co https://api.groq.com; img-src 'self' data: https:;">
 <title>Sistem Pengurusan Mesyuarat — DPMM Negeri Johor</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.tailwindcss.com" integrity="sha384-..." crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" integrity="sha384-..." crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js" integrity="sha384-..." crossorigin="anonymous"></script>
 <script src="config-local.js" onerror="console.info('config-local.js tidak dijumpai — menggunakan konfigurasi lalai.')"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -898,10 +900,10 @@
 const SUPABASE_URL = 'https://lzoloupwtqmjyupvofhh.supabase.co';
 const SUPABASE_KEY = (typeof CONFIG !== 'undefined' && CONFIG.SUPABASE_KEY && !CONFIG.SUPABASE_KEY.startsWith('YOUR_'))
   ? CONFIG.SUPABASE_KEY
-  : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6b2xvdXB3dHFtanl1cHZvZmhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NTMxMTEsImV4cCI6MjA4ODUyOTExMX0.tBcGc6KfPyjUmJngbLTBHv-GZkSoSoyWGXwlXFZ0ShE';
+  : (() => { throw new Error('SUPABASE_KEY not configured. Please set CONFIG.SUPABASE_KEY in config-local.js'); })();
 const GOOGLE_CID   = (typeof CONFIG !== 'undefined' && CONFIG.GOOGLE_CID && !CONFIG.GOOGLE_CID.startsWith('YOUR_')) ? CONFIG.GOOGLE_CID : 'YOUR_GOOGLE_CID_HERE';
 const MAIN_FOLDER  = 'Sistem Pengurusan Mesyuarat DPMM Johor';
-const GROQ_KEY     = (typeof CONFIG !== 'undefined' && CONFIG.GROQ_KEY && !CONFIG.GROQ_KEY.startsWith('YOUR_')) ? CONFIG.GROQ_KEY : 'YOUR_GROQ_KEY_HERE';
+const GROQ_KEY     = (typeof CONFIG !== 'undefined' && CONFIG.GROQ_KEY && !CONFIG.GROQ_KEY.startsWith('YOUR_')) ? CONFIG.GROQ_KEY : null;
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -927,18 +929,88 @@ async function doLogin() {
   const errEl=document.getElementById('loginErr'), btn=document.getElementById('lgBtn');
   errEl.classList.add('hidden');
   if(!id||!pw){setLoginErr('Sila masukkan ID dan kata laluan.');return;}
+  
+  // Check account lockout (5 failed attempts in 15 minutes)
+  const lockoutKey = `login_lockout_${id}`;
+  const lockoutData = localStorage.getItem(lockoutKey);
+  if (lockoutData) {
+    const { attempts, timestamp } = JSON.parse(lockoutData);
+    const timeElapsed = Date.now() - timestamp;
+    const lockoutDuration = 15 * 60 * 1000; // 15 minutes
+    
+    if (attempts >= 5 && timeElapsed < lockoutDuration) {
+      const remainingTime = Math.ceil((lockoutDuration - timeElapsed) / 60000);
+      setLoginErr(`Akaun dikunci. Cuba semula dalam ${remainingTime} minit.`);
+      return;
+    } else if (timeElapsed >= lockoutDuration) {
+      // Reset lockout after 15 minutes
+      localStorage.removeItem(lockoutKey);
+    }
+  }
+  
   btn.innerHTML='<div class="spinner" style="width:16px;height:16px;"></div>&nbsp;Mengesahkan...';
   btn.disabled=true;
   try{
-    const{data,error}=await db.from('DPMM_USERS').select('user_id,nama,peranan,aktif,kata_laluan').eq('user_id',id).single();
-    if(error||!data){setLoginErr('ID pengguna tidak dijumpai.');return;}
-    if(!data.aktif){setLoginErr('Akaun tidak aktif. Hubungi pentadbir.');return;}
-    if(data.kata_laluan!==pw){setLoginErr('Kata laluan tidak betul.');return;}
+    const{data,error}=await db.from('DPMM_USERS').select('user_id,nama,peranan,aktif,kata_laluan,kata_laluan_hash,password_migrated').eq('user_id',id).single();
+    if(error||!data){
+      // Track failed attempt
+      trackFailedLogin(id);
+      setLoginErr('ID pengguna tidak dijumpai.');return;
+    }
+    if(!data.aktif){
+      trackFailedLogin(id);
+      setLoginErr('Akaun tidak aktif. Hubungi pentadbir.');return;
+    }
+    // Use bcrypt.compare() for password verification (supports both plaintext and hashed passwords during migration)
+    const bcrypt = window.bcryptjs;
+    let passwordValid = false;
+    
+    if (data.kata_laluan_hash && data.password_migrated) {
+      // User has migrated to hashed password
+      passwordValid = await bcrypt.compare(pw, data.kata_laluan_hash);
+    } else if (data.kata_laluan) {
+      // User still has plaintext password (fallback during migration)
+      passwordValid = (data.kata_laluan === pw);
+    } else {
+      trackFailedLogin(id);
+      setLoginErr('Kata laluan tidak betul.');return;
+    }
+    
+    if (!passwordValid) {
+      trackFailedLogin(id);
+      setLoginErr('Kata laluan tidak betul.');return;
+    }
+    
+    // Clear failed login attempts on successful login
+    localStorage.removeItem(lockoutKey);
+    
     user={user_id:data.user_id,nama:data.nama,peranan:data.peranan};
     logAudit('LOGIN','DPMM_USERS',user.user_id);
     await bootApp();
   }catch(e){setLoginErr('Ralat sambungan. Cuba semula.');console.error(e);}
   finally{btn.innerHTML='Log Masuk';btn.disabled=false;}
+}
+
+function trackFailedLogin(userId) {
+  const lockoutKey = `login_lockout_${userId}`;
+  const lockoutData = localStorage.getItem(lockoutKey);
+  
+  if (lockoutData) {
+    const { attempts, timestamp } = JSON.parse(lockoutData);
+    const timeElapsed = Date.now() - timestamp;
+    const lockoutDuration = 15 * 60 * 1000; // 15 minutes
+    
+    if (timeElapsed >= lockoutDuration) {
+      // Reset after 15 minutes
+      localStorage.setItem(lockoutKey, JSON.stringify({ attempts: 1, timestamp: Date.now() }));
+    } else {
+      // Increment attempts
+      localStorage.setItem(lockoutKey, JSON.stringify({ attempts: attempts + 1, timestamp }));
+    }
+  } else {
+    // First failed attempt
+    localStorage.setItem(lockoutKey, JSON.stringify({ attempts: 1, timestamp: Date.now() }));
+  }
 }
 function setLoginErr(msg){const el=document.getElementById('loginErr');el.textContent=msg;el.classList.remove('hidden');}
 function doLogout(){
