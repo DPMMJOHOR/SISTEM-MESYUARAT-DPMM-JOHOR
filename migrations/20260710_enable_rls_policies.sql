@@ -62,7 +62,8 @@ CREATE POLICY "Admin full access on DPMM_TEMPLATES" ON DPMM_TEMPLATES
 -- DPMM_SEND_LOG
 ALTER TABLE DPMM_SEND_LOG ENABLE ROW LEVEL SECURITY;
 
--- Drop existing policies if they exist
+-- Drop existing policies (both secure and insecure) to clean slate
+DROP POLICY IF EXISTS "Admin full access on DPMM_SEND_LOG" ON DPMM_SEND_LOG;
 DROP POLICY IF EXISTS "anon all sendlog" ON DPMM_SEND_LOG;
 
 -- Create proper RLS policies for DPMM_SEND_LOG
@@ -73,7 +74,8 @@ CREATE POLICY "Admin full access on DPMM_SEND_LOG" ON DPMM_SEND_LOG
 -- DPMM_BLAST_QUEUE
 ALTER TABLE DPMM_BLAST_QUEUE ENABLE ROW LEVEL SECURITY;
 
--- Drop existing policies if they exist
+-- Drop existing policies (both secure and insecure) to clean slate
+DROP POLICY IF EXISTS "Admin full access on DPMM_BLAST_QUEUE" ON DPMM_BLAST_QUEUE;
 DROP POLICY IF EXISTS "anon all blast_queue" ON DPMM_BLAST_QUEUE;
 
 -- Create proper RLS policies for DPMM_BLAST_QUEUE
