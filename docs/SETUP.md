@@ -76,7 +76,7 @@ Add to Supabase project:
 - `TWILIO_ACCOUNT_SID`
 - `TWILIO_AUTH_TOKEN`
 - `TWILIO_WHATSAPP_NUMBER`
-- `GROQ_API_KEY`
+- `GROQ_KEY`
 
 ## 4. Meeting System Setup
 
