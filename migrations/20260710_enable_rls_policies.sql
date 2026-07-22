@@ -32,9 +32,13 @@ ALTER TABLE DPMM_USERS ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies (both secure and insecure) to clean slate
 DROP POLICY IF EXISTS "Admin full access on DPMM_USERS" ON DPMM_USERS;
+DROP POLICY IF EXISTS "admin_full_access_dpmm_users" ON DPMM_USERS;
 DROP POLICY IF EXISTS "anon_update_users" ON DPMM_USERS;
-DROP POLICY IF EXISTS "anon read users" ON DPMM_USERS;
+DROP POLICY IF EXISTS "anon_read users" ON DPMM_USERS;
 DROP POLICY IF EXISTS "admin write users" ON DPMM_USERS;
+DROP POLICY IF EXISTS "anon_insert_users" ON DPMM_USERS;
+DROP POLICY IF EXISTS "anon_read_active_users" ON DPMM_USERS;
+DROP POLICY IF EXISTS "user_read_own_row" ON DPMM_USERS;
 
 -- Create proper RLS policies for DPMM_USERS
 CREATE POLICY "Admin full access on DPMM_USERS" ON DPMM_USERS
@@ -49,9 +53,11 @@ DROP POLICY IF EXISTS "Admin full access on DPMM_TEMPLATES" ON DPMM_TEMPLATES;
 DROP POLICY IF EXISTS "anon_update_templates" ON DPMM_TEMPLATES;
 DROP POLICY IF EXISTS "anon_delete_templates" ON DPMM_TEMPLATES;
 DROP POLICY IF EXISTS "anon_select_templates" ON DPMM_TEMPLATES;
+DROP POLICY IF EXISTS "anon_insert_templates" ON DPMM_TEMPLATES;
 DROP POLICY IF EXISTS "dpmm_templates_update (anon)" ON DPMM_TEMPLATES;
 DROP POLICY IF EXISTS "dpmm_templates_delete (anon)" ON DPMM_TEMPLATES;
 DROP POLICY IF EXISTS "dpmm_templates_select (anon)" ON DPMM_TEMPLATES;
+DROP POLICY IF EXISTS "dpmm_templates_insert (anon)" ON DPMM_TEMPLATES;
 DROP POLICY IF EXISTS "anon all templates" ON DPMM_TEMPLATES;
 
 -- Create proper RLS policies for DPMM_TEMPLATES
