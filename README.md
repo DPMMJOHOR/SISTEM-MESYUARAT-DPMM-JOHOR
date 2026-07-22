@@ -37,10 +37,22 @@ Tambah secrets berikut dalam **Settings → Secrets and variables → Actions**:
 |---|---|
 | `SUPABASE_KEY` | Anon key dari Supabase Dashboard |
 | `GOOGLE_CID` | Google OAuth Client ID (tinggalkan kosong jika tidak guna Drive) |
-| `GROQ_KEY` | API key dari [console.groq.com](https://console.groq.com) |
 | `GMAIL_USER` | Emel Gmail untuk penghantaran peringatan |
 | `GMAIL_PASS` | Gmail App Password (bukan kata laluan biasa) |
 | `ADMIN_EMAIL` | Emel pentadbir untuk terima peringatan |
+
+### 2.1. Supabase Edge Function Secrets
+
+Untuk Aiman AI chatbot, tambah environment variable dalam **Supabase Dashboard → Edge Functions → groq-chatbot → Environment Variables**:
+
+| Environment Variable | Nilai |
+|---|---|
+| `GROQ_KEY` | API key dari [console.groq.com](https://console.groq.com) |
+
+Kemudian deploy Edge Function:
+```bash
+npx supabase functions deploy groq-chatbot --project-ref lzoloupwtqmjyupvofhh
+```
 
 ### 3. GitHub Pages
 

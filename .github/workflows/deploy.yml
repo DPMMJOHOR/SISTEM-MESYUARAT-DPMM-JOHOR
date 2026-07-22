@@ -28,7 +28,6 @@ jobs:
         run: |
           if [ -f "config-local.js" ]; then
             sed -i "s/CONFIG.SUPABASE_KEY = 'YOUR_SUPABASE_KEY_HERE'/CONFIG.SUPABASE_KEY = '${{ secrets.SUPABASE_KEY }}'/" config-local.js
-            sed -i "s/CONFIG.GROQ_KEY = 'YOUR_GROQ_KEY_HERE'/CONFIG.GROQ_KEY = '${{ secrets.GROQ_KEY }}'/" config-local.js
             sed -i "s/CONFIG.GOOGLE_CID = 'YOUR_GOOGLE_CID_HERE'/CONFIG.GOOGLE_CID = '${{ secrets.GOOGLE_CID }}'/" config-local.js
             sed -i "s/CONFIG.TURNSTILE_SITE_KEY = 'YOUR_TURNSTILE_SITE_KEY_HERE'/CONFIG.TURNSTILE_SITE_KEY = '${{ secrets.TURNSTILE_SITE_KEY }}'/" config-local.js
             echo "Secrets injected successfully"
