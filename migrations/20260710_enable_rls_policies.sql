@@ -4,7 +4,8 @@
 -- DPMM_MESYUARAT
 ALTER TABLE DPMM_MESYUARAT ENABLE ROW LEVEL SECURITY;
 
--- Drop existing policies if they exist
+-- Drop existing insecure policies
+DROP POLICY IF EXISTS "allow_all_mesyuarat" ON DPMM_MESYUARAT;
 DROP POLICY IF EXISTS "anon all mesyuarat" ON DPMM_MESYUARAT;
 
 -- Create proper RLS policies for DPMM_MESYUARAT
@@ -15,7 +16,8 @@ CREATE POLICY "Admin full access on DPMM_MESYUARAT" ON DPMM_MESYUARAT
 -- DPMM_KEHADIRAN
 ALTER TABLE DPMM_KEHADIRAN ENABLE ROW LEVEL SECURITY;
 
--- Drop existing policies if they exist
+-- Drop existing insecure policies
+DROP POLICY IF EXISTS "allow_all_kehadiran" ON DPMM_KEHADIRAN;
 DROP POLICY IF EXISTS "anon all kehadiran" ON DPMM_KEHADIRAN;
 
 -- Create proper RLS policies for DPMM_KEHADIRAN
@@ -26,7 +28,8 @@ CREATE POLICY "Admin full access on DPMM_KEHADIRAN" ON DPMM_KEHADIRAN
 -- DPMM_USERS
 ALTER TABLE DPMM_USERS ENABLE ROW LEVEL SECURITY;
 
--- Drop existing policies if they exist
+-- Drop existing insecure policies
+DROP POLICY IF EXISTS "anon_update_users" ON DPMM_USERS;
 DROP POLICY IF EXISTS "anon read users" ON DPMM_USERS;
 DROP POLICY IF EXISTS "admin write users" ON DPMM_USERS;
 
@@ -38,7 +41,13 @@ CREATE POLICY "Admin full access on DPMM_USERS" ON DPMM_USERS
 -- DPMM_TEMPLATES
 ALTER TABLE DPMM_TEMPLATES ENABLE ROW LEVEL SECURITY;
 
--- Drop existing policies if they exist
+-- Drop existing insecure policies
+DROP POLICY IF EXISTS "anon_update_templates" ON DPMM_TEMPLATES;
+DROP POLICY IF EXISTS "anon_delete_templates" ON DPMM_TEMPLATES;
+DROP POLICY IF EXISTS "anon_select_templates" ON DPMM_TEMPLATES;
+DROP POLICY IF EXISTS "dpmm_templates_update (anon)" ON DPMM_TEMPLATES;
+DROP POLICY IF EXISTS "dpmm_templates_delete (anon)" ON DPMM_TEMPLATES;
+DROP POLICY IF EXISTS "dpmm_templates_select (anon)" ON DPMM_TEMPLATES;
 DROP POLICY IF EXISTS "anon all templates" ON DPMM_TEMPLATES;
 
 -- Create proper RLS policies for DPMM_TEMPLATES
