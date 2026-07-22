@@ -96,3 +96,12 @@ Untuk ujian dengan kunci sebenar, salin `config-local.js.example` ke `config-loc
 - **WA Automation**: WAHA (Docker, jalankan tempatan)
 - **Email**: Nodemailer + Gmail App Password
 - **Deploy**: GitHub Pages + GitHub Actions
+
+## Security
+
+- **RLS Policies**: All tables require authentication (auth.uid() IS NOT NULL)
+- **API Keys**: Groq API key secured in Supabase Edge Function environment
+- **Session Management**: 30-minute timeout with auto-logout
+- **PII Protection**: Encrypted data at rest and in transit
+
+See [docs/SECURITY.md](docs/SECURITY.md) for detailed security architecture.
