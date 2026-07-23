@@ -1428,8 +1428,11 @@ async function doLogin() {
   btn.innerHTML='<div class="spinner" style="width:16px;height:16px;"></div>&nbsp;Mengesahkan...';
   btn.disabled=true;
   try{
+    console.log('Login attempt for user_id:', id);
     const{data,error}=await db.from('DPMM_USERS').select('user_id,nama,peranan,aktif,kata_laluan,kata_laluan_hash,password_migrated').eq('user_id',id).single();
+    console.log('Supabase query result:', { data, error });
     if(error||!data){
+      console.error('Login error:', error);
       // Track failed attempt
       trackFailedLogin(id);
       setLoginErr('ID pengguna tidak dijumpai.');return;
