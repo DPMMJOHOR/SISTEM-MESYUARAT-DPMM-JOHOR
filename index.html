@@ -1569,9 +1569,11 @@ async function loadMembers(){
 
 // ── MEETINGS ──
 async function loadMeetings(){
-  const{data}=await db.from('DPMM_MESYUARAT').select('*').order('dibuat_pada',{ascending:false});
-  if(!data||data.length===0){document.getElementById('meetSel').innerHTML='<option>Tiada mesyuarat</option>';return;}
-  const sel=document.getElementById('meetSel'); sel.innerHTML='';
+  const{data}=await db.from('DPMM_MESYUATAT').select('*').order('dibuat_pada',{ascending:false});
+  const sel=document.getElementById('meetSel');
+  if(!sel) return;
+  if(!data||data.length===0){sel.innerHTML='<option>Tiada mesyuarat</option>';return;}
+  sel.innerHTML='';
   data.forEach(m=>{
     const o=document.createElement('option'); o.value=m.mesyuarat_id; o.textContent=m.mesyuarat_id;
     if(m.aktif) o.selected=true; sel.appendChild(o);
