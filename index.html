@@ -1569,7 +1569,7 @@ async function loadMembers(){
 
 // ── MEETINGS ──
 async function loadMeetings(){
-  const{data}=await db.from('DPMM_MESYUATAT').select('*').order('dibuat_pada',{ascending:false});
+  const{data}=await db.from('DPMM_MESYUARAT').select('*').order('dibuat_pada',{ascending:false});
   const sel=document.getElementById('meetSel');
   if(!sel) return;
   if(!data||data.length===0){sel.innerHTML='<option>Tiada mesyuarat</option>';return;}
