@@ -20,6 +20,17 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" integrity="sha384-sgcvElP/LlNRtORGYFLO/9K/bENcpJK19HgvqslWXog6d8f/Va4TpltGiBlGntCM" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js" integrity="sha384-qGFE4FIJLgCFuYs3nzg39XpCtvT5AZUhaBdjB3e1+vpKQa03AkyWOyBSFb9OcQ/g" crossorigin="anonymous"></script>
 <script src="config-local.js" onerror="console.info('config-local.js tidak dijumpai — menggunakan konfigurasi lalai.')"></script>
+<script src="js/validation.js"></script>
+<script src="js/waha-integration.js"></script>
+<script src="js/resend-integration.js"></script>
+<script src="js/google-drive-integration.js"></script>
+<script src="js/csv-excel-parser.js"></script>
+<script src="js/non-member-contacts.js"></script>
+<script src="js/rsvp-tracker.js"></script>
+<script src="js/qr-generator.js"></script>
+<script src="js/attendee-qr-generator.js"></script>
+<script src="js/access-control.js"></script>
+<script src="js/reminder-scheduler.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
@@ -44,15 +55,44 @@
     --text-mid:   #374151;
     --text-soft:  #6B7280;
     --text-faint: #9CA3AF;
+    
+    /* Sidebar variables */
+    --sidebar-w:  260px;
+    --sidebar-bg: #FFFFFF;
+    --primary:    #6C5CE7;
+    --primary-lt: #EEE9FD;
+    --primary-dk: #5549D4;
+    --gray1:      #EBE9F1;
+    --gray2:      #D8D6DE;
+    --gray3:      #B9B9C3;
   }
 
   * { box-sizing: border-box; }
 
   body {
     font-family: 'DM Sans', sans-serif;
-    background: var(--bg);
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     color: var(--text-mid);
     min-height: 100vh;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 15% 20%, rgba(29, 60, 150, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 85% 80%, rgba(29, 60, 150, 0.02) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body > * {
+    position: relative;
+    z-index: 1;
   }
 
   h1,h2,h3,h4,.hero { font-family: 'Outfit', sans-serif; }
@@ -137,37 +177,10 @@
   .btn-white  { background: #fff; color: var(--text-mid); border: 1.5px solid #E2E8F0; }
   .btn-white:hover { background: #F8FAFF; border-color: var(--blue-pale); }
 
-  /* ── Nav tabs ── */
-  .nav-tab {
-    border-bottom: 3px solid transparent;
-    color: var(--text-soft);
-    font-weight: 500;
-    font-size: 0.875rem;
-    transition: all .2s;
-    padding: 0 1rem;
-    height: 48px;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-  }
-  .nav-tab:hover { color: var(--blue); background: var(--blue-light); }
-  .nav-tab-active {
-    border-bottom: 3px solid var(--blue) !important;
-    color: var(--blue) !important;
-    font-weight: 700;
-    background: var(--blue-light);
-  }
-
   /* ── Admin sub tabs ── */
   .admtab-active   { background: var(--blue); color: #fff; box-shadow: 0 2px 8px rgba(37,99,235,0.25); }
   .admtab-inactive { background: #fff; color: var(--text-mid); border: 1.5px solid var(--border); }
   .admtab-inactive:hover { background: var(--blue-light); border-color: var(--blue-pale); color: var(--blue); }
-
-  /* ── Header ── */
-  .app-header {
-    background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 60%, #3B82F6 100%);
-    box-shadow: 0 2px 16px rgba(37,99,235,0.25);
-  }
 
   /* ── Login ── */
   .login-bg {
@@ -299,9 +312,178 @@
   /* ── Divider ── */
   .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); margin: 1rem 0; }
 
+  /* ── SIDEBAR ── */
+  #sidebar {
+    position: fixed; top: 0; left: 0;
+    width: var(--sidebar-w); height: 100vh;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--gray1);
+    display: flex; flex-direction: column;
+    z-index: 200; overflow-y: auto; overflow-x: hidden;
+    transition: transform .3s ease;
+    box-shadow: 0 0 20px rgba(34,41,47,.1);
+  }
+  .sb-header {
+    padding: 20px 16px 14px;
+    text-align: center;
+  }
+  .sb-logo-wrap {
+    display: flex; justify-content: center; margin-bottom: 12px;
+  }
+  .sb-logo-round {
+    width: 90px; height: 90px; object-fit: contain;
+    filter: none;
+  }
+  .sb-sys-name {
+    font-family: 'Outfit', sans-serif;
+    font-size: clamp(10px, 1.4vw, 13px);
+    font-weight: 900;
+    color: var(--blue);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1.35;
+    text-align: center;
+    padding: 0 8px;
+    word-break: break-word;
+  }
+  .sb-divider { height: 1px; background: var(--gray1); margin: 10px 16px; }
+
+  .sb-user-chip {
+    background: var(--blue-light); border: 1px solid var(--blue-pale);
+    border-radius: 8px; padding: 10px 12px; margin: 0 14px 4px;
+    text-align: center;
+  }
+  .sb-user-label { font-size: 9.5px; color: var(--blue); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+  .sb-user-name { font-size: 13px; font-weight: 800; color: var(--text-mid); margin-top: 3px; line-height: 1.3; text-align: center; }
+
+  .sb-stats {
+    padding: 10px 16px 12px;
+    text-align: center;
+  }
+  .sb-stats-inner {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .sb-count { font-family: 'DM Sans', monospace; font-size: 36px; font-weight: 700; color: var(--blue); line-height: 1; }
+  .sb-stats-right { text-align: left; }
+  .sb-count-label { font-size: 10px; color: var(--text-soft); text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
+  .sb-datetime { font-size: 10px; color: #000; font-family: 'DM Sans', monospace; margin-top: 3px; font-weight: 600; }
+
+  .sb-nav { flex: 1; padding: 8px 0; }
+  .sb-section-label {
+    font-size: 9px; font-weight: 900; letter-spacing: 2px;
+    color: var(--gray3); padding: 10px 16px 4px;
+    text-transform: uppercase; text-align: center;
+  }
+  .nav-item {
+    display: flex; align-items: center; justify-content: center;
+    padding: 10px 12px; cursor: pointer;
+    font-size: 11.5px; font-weight: 700; color: var(--text-mid);
+    border-left: 3px solid transparent;
+    border-radius: 0 8px 8px 0;
+    margin: 1px 10px 1px 0;
+    transition: all .15s;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    gap: 6px;
+  }
+  .nav-item .nav-icon { font-size: 14px; color: var(--gray3); flex-shrink: 0; }
+  .nav-item .nav-text { flex: 1; text-align: center; }
+  .nav-item:hover {
+    background: var(--blue-light); color: var(--blue);
+    border-left-color: transparent;
+  }
+  .nav-item:hover .nav-icon { color: var(--blue); }
+  .nav-item.active {
+    background: var(--blue-light); color: var(--blue);
+    border-left-color: var(--blue); font-weight: 800;
+    box-shadow: 0 4px 18px rgba(37,99,235,.2);
+  }
+  .nav-item.active .nav-icon { color: var(--blue); }
+  .nav-badge {
+    background: var(--red); color: var(--white);
+    font-size: 10px; font-weight: 800; padding: 2px 7px;
+    border-radius: 10px; font-family: monospace;
+  }
+  .sb-footer {
+    padding: 12px 16px 14px;
+    border-top: 1px solid var(--gray1);
+  }
+  .logout-btn {
+    width: 100%; padding: 9px; background: transparent;
+    color: var(--red); border: 1.5px solid var(--red);
+    border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer;
+    text-transform: uppercase; letter-spacing: 1px; transition: all .15s;
+    text-align: center;
+  }
+  .logout-btn:hover { background: var(--red); color: var(--white); }
+
+  /* ── MAIN LAYOUT WITH SIDEBAR ── */
+  #mainApp { margin-left: var(--sidebar-w); min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ── ORG HEADER ── */
+  .org-header {
+    background: var(--card);
+    padding: 0 20px; height: 80px;
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid var(--gray1);
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 10px rgba(34,41,47,.08);
+  }
+  .hdr-center-logo {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+  .hdr-logo-img {
+    height: 64px; width: auto; object-fit: contain;
+  }
+  .hdr-org-text { flex: 1; min-width: 0; }
+  .hdr-org-name {
+    font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 900;
+    color: #1a3f7a; line-height: 1.2; letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .hdr-org-state {
+    font-size: 13px; font-weight: 700; color: #000;
+    letter-spacing: 2px; text-transform: uppercase; margin-top: 3px;
+  }
+  .hdr-clock { flex-shrink: 0; text-align: center; min-width: 180px; }
+  .digital-clock-box { display: inline-block; text-align: center; }
+  .digital-time-row {
+    display: flex; align-items: baseline; gap: 2px; justify-content: center;
+  }
+  .digital-time {
+    font-family: 'DM Sans', monospace;
+    font-size: 34px; font-weight: 700; color: #000;
+    letter-spacing: 4px; line-height: 1;
+  }
+  .digital-sec {
+    font-family: 'DM Sans', monospace;
+    font-size: 24px; font-weight: 700; color: #333; line-height: 1;
+    letter-spacing: 3px;
+  }
+  .digital-date {
+    font-size: 11px; color: var(--text-soft); font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px; margin-top: 2px;
+  }
+
+  /* ── Responsive Sidebar ── */
+  @media (max-width: 1024px) {
+    #sidebar { transform: translateX(-100%); }
+    #sidebar.open { transform: translateX(0); }
+    #mainApp { margin-left: 0; }
+    .sidebar-toggle { display: block !important; }
+  }
+  @media (min-width: 1025px) {
+    .sidebar-toggle { display: none !important; }
+  }
+
   /* ── Print ── */
   @media print {
     .no-print { display: none !important; }
+    #sidebar { display: none !important; }
+    #mainApp { margin-left: 0 !important; }
     @page { size: A4 landscape; margin: 1cm; }
     body { font-size: 10px; background: #fff; }
     table { border-collapse: collapse; width: 100%; }
@@ -309,6 +491,163 @@
     th { background: #1E3A8A !important; color: #fff !important; }
     .card { box-shadow: none; border: 1px solid #ccc; }
   }
+
+/* ── BUTTON SHINE ── */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1D3C96, #152D7A);
+  border-radius: 6px;
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  padding: 12px 24px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-shine:focus {
+  outline: 2px solid #1D3C96;
+  outline-offset: 2px;
+}
+
+.btn-shine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-shine:hover::before {
+  left: 100%;
+}
+
+.btn-shine:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(29, 60, 150, 0.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-shine::before {
+    display: none;
+  }
+  .btn-shine:hover {
+    transform: none;
+  }
+}
+
+/* ── MODERN KPI CARD ── */
+.modern-kpi-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.modern-kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #1D3C96;
+  opacity: 0.5;
+}
+
+.modern-kpi-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.modern-kpi-card.modern-kpi-danger::before {
+  background: #DC2626;
+}
+
+.modern-kpi-card.modern-kpi-gold::before {
+  background: #D97706;
+}
+
+.modern-kpi-card.modern-kpi-green::before {
+  background: #16A34A;
+}
+
+.modern-kpi-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.modern-kpi-val {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1E3A8A;
+  line-height: 1.2;
+  margin-bottom: 4px;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.modern-kpi-sub {
+  font-size: 12px;
+  color: #9CA3AF;
+}
+
+.modern-kpi-card.modern-kpi-danger .modern-kpi-val {
+  color: #DC2626;
+}
+
+.modern-kpi-card.modern-kpi-gold .modern-kpi-val {
+  color: #D97706;
+}
+
+.modern-kpi-card.modern-kpi-green .modern-kpi-val {
+  color: #16A34A;
+}
+
+@media (max-width: 768px) {
+  .modern-kpi-card {
+    padding: 16px;
+  }
+  .modern-kpi-val {
+    font-size: 24px;
+  }
+}
+
+/* ── TABLE ROW HIGHLIGHT ── */
+.table-row-highlight {
+  background: rgba(29, 60, 150, 0.04);
+  transition: background 0.2s ease;
+}
+
+.table-row-highlight:hover {
+  background: rgba(29, 60, 150, 0.08);
+}
+
+.table-row-highlight td {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── STATUS BADGE ── */
+.badge-navy { background: rgba(29, 60, 150, 0.08); color: #1D3C96; border: 1px solid rgba(29, 60, 150, 0.2); padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; font-family: 'Outfit', sans-serif; }
+.badge-red { background: rgba(204, 22, 40, 0.08); color: #CC1628; border: 1px solid rgba(204, 22, 40, 0.2); padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; font-family: 'Outfit', sans-serif; }
+.badge-gray { background: rgba(107, 114, 128, 0.08); color: #6B7280; border: 1px solid rgba(107, 114, 128, 0.2); padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; font-family: 'Outfit', sans-serif; }
+.badge-gold { background: rgba(217, 119, 6, 0.08); color: #D97706; border: 1px solid rgba(217, 119, 6, 0.2); padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; font-family: 'Outfit', sans-serif; }
+.badge-paid { background: rgba(21, 128, 61, 0.08); color: #15803D; border: 1px solid rgba(21, 128, 61, 0.2); padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; font-family: 'Outfit', sans-serif; }
+.badge-unpaid { background: rgba(204, 22, 40, 0.08); color: #CC1628; border: 1px solid rgba(204, 22, 40, 0.2); padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; font-family: 'Outfit', sans-serif; }
+.badge-ok { background: rgba(21, 128, 61, 0.08); color: #15803D; border: 1px solid rgba(21, 128, 61, 0.2); padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; font-family: 'Outfit', sans-serif; }
 </style>
 </head>
 <body>
@@ -352,7 +691,7 @@
         <label style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:6px;">Kata Laluan</label>
         <input id="lgPw" type="password" placeholder="••••••••" class="inp" autocomplete="current-password">
       </div>
-      <button id="lgBtn" onclick="doLogin()" class="btn btn-blue" style="width:100%;justify-content:center;padding:.75rem;font-size:.95rem;border-radius:10px;">
+      <button id="lgBtn" onclick="doLogin()" class="btn btn-blue btn-shine" style="width:100%;justify-content:center;padding:.75rem;font-size:.95rem;border-radius:10px;">
         Log Masuk
       </button>
     </div>
@@ -366,242 +705,175 @@
 <!-- ══════════════════════════════════════════ MAIN APP ══ -->
 <div id="mainApp" class="hidden">
 
-  <!-- HEADER -->
-  <header class="app-header no-print sticky top-0 z-40">
-    <div style="max-width:1600px;margin:0 auto;padding:.65rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;">
-
-      <!-- Logo + Brand -->
-      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
-        <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%);padding:3px;box-shadow:0 2px 8px rgba(0,0,0,0.15);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.7rem;font-family:'Outfit',sans-serif;">
-          D
-        </div>
-        <div>
-          <div style="font-family:'Outfit',sans-serif;font-weight:800;color:#fff;font-size:.88rem;line-height:1.2;">Sistem Pengurusan Mesyuarat</div>
-          <div style="font-size:.7rem;color:rgba(255,255,255,0.75);font-weight:500;">DPMM Negeri Johor</div>
+  <!-- SIDEBAR -->
+  <div id="sidebar" class="no-print">
+    <div class="sb-header">
+      <div class="sb-logo-wrap">
+        <img src="logo-dpmmnj.png" alt="DPMM" class="sb-logo-round"
+             onerror="this.style.display='none';document.getElementById('sbLogoFallback').style.display='flex'">
+        <div id="sbLogoFallback" style="display:none;width:90px;height:90px;background:linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%);border-radius:50%;align-items:center;justify-content:center;">
+          <span style="font-family:'Outfit',sans-serif;font-weight:900;color:#fff;font-size:1.8rem;">DPMM</span>
         </div>
       </div>
+      <div class="sb-sys-name">SISTEM MESYUARAT</div>
+    </div>
 
-      <!-- Meeting selector -->
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:.72rem;color:rgba(255,255,255,0.6);display:none;" class="sm-show">Mesyuarat:</span>
-        <select id="meetSel" onchange="onMeetingChange()"
-                style="background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.25);color:#fff;border-radius:8px;padding:.4rem .75rem;font-size:.8rem;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;max-width:210px;">
-        </select>
-      </div>
+    <div class="sb-divider"></div>
 
-      <!-- User -->
-      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
-        <div style="text-align:right;display:none;" class="sm-show">
-          <div id="hdrName" style="font-size:.8rem;color:#fff;font-weight:600;"></div>
-          <span id="hdrBadge" style="font-size:.68rem;padding:.15rem .55rem;border-radius:999px;font-weight:700;"></span>
+    <div class="sb-user-chip">
+      <div class="sb-user-label">LOG MASUK SEBAGAI</div>
+      <div id="sbUserName" class="sb-user-name">[User]</div>
+    </div>
+
+    <div class="sb-stats">
+      <div class="sb-stats-inner">
+        <div id="sbMeetCount" class="sb-count">0</div>
+        <div class="sb-stats-right">
+          <div class="sb-count-label">MESYUARAT</div>
+          <div id="sbDateTime" class="sb-datetime">--:--</div>
         </div>
-        <a href="https://dpmmjohor.github.io/SISTEM-AHLI-DPMM-JOHOR/" target="_blank"
-           style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.22);color:rgba(255,255,255,0.85);border-radius:8px;font-size:.75rem;padding:.4rem .875rem;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;text-decoration:none;transition:background .15s;"
-           onmouseover="this.style.background='rgba(255,255,255,0.22)'"
-           onmouseout="this.style.background='rgba(255,255,255,0.12)'">← Sistem Ahli</a>
-        <button onclick="doLogout()"
-                style="background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.25);color:#fff;border-radius:8px;font-size:.78rem;padding:.4rem .875rem;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;transition:background .15s;"
-                onmouseover="this.style.background='rgba(255,255,255,0.25)'"
-                onmouseout="this.style.background='rgba(255,255,255,0.15)'">Keluar</button>
+      </div>
+    </div>
+
+    <div class="sb-divider"></div>
+
+    <div class="sb-nav">
+      <div class="sb-section-label">MENU UTAMA</div>
+      <div id="navSenaraiMesyuarat" onclick="showTab('senaraiMesyuarat')" class="nav-item active">
+        <span class="nav-icon">📋</span>
+        <span class="nav-text">Senarai Mesyuarat</span>
+      </div>
+      <div id="navTemplateWA" onclick="showTab('templateWA')" class="nav-item">
+        <span class="nav-icon">💬</span>
+        <span class="nav-text">Template WhatsApp</span>
+      </div>
+      <div id="navSenaraiAhli" onclick="showTab('senaraiAhli')" class="nav-item">
+        <span class="nav-icon">👥</span>
+        <span class="nav-text">Senarai Maklumat Ahli</span>
+      </div>
+      <div id="navNonMemberContacts" onclick="showTab('nonMemberContacts')" class="nav-item">
+        <span class="nav-icon">📇</span>
+        <span class="nav-text">Hubungan Luar</span>
+      </div>
+      <div id="navJadual" onclick="showTab('jadual')" class="nav-item">
+        <span class="nav-icon">📅</span>
+        <span class="nav-text">Jadual Mesyuarat</span>
+      </div>
+      <div id="navAdmin" onclick="showTab('admin')" class="nav-item admin-only hidden">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-text">Pentadbiran</span>
+      </div>
+    </div>
+
+    <div class="sb-footer">
+      <button onclick="doLogout()" class="logout-btn btn-shine">LOG KELUAR</button>
+    </div>
+  </div>
+
+  <!-- ORG HEADER -->
+  <header class="org-header no-print">
+    <div class="hdr-org-text">
+      <div class="hdr-org-name">Dewan Perniagaan Melayu Malaysia</div>
+      <div class="hdr-org-state">Negeri Johor</div>
+    </div>
+    <div class="hdr-center-logo">
+      <img src="logo-dpmmnj.png" alt="DPMM" class="hdr-logo-img"
+           onerror="this.style.display='none'">
+    </div>
+    <div class="hdr-clock">
+      <div class="digital-clock-box">
+        <div class="digital-time-row">
+          <span id="clockTime" class="digital-time">00:00</span>
+          <span id="clockSec" class="digital-sec">00</span>
+        </div>
+        <div id="clockDate" class="digital-date">-- --- ----</div>
       </div>
     </div>
   </header>
 
-  <!-- NAV -->
-  <nav style="background:#fff;border-bottom:1.5px solid var(--border);box-shadow:0 1px 6px rgba(37,99,235,0.06);" class="no-print">
-    <div style="max-width:1600px;margin:0 auto;padding:0 1rem;display:flex;">
-      <button id="navDash"    onclick="showTab('dash')"    class="nav-tab">
-        <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
-        Dashboard
-      </button>
-      <button id="navSenarai" onclick="showTab('senarai')" class="nav-tab">
-        <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-        Senarai Kehadiran
-      </button>
-      <button id="navAdmin"   onclick="showTab('admin')"   class="nav-tab admin-only hidden">
-        <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        Pentadbiran
-      </button>
-    </div>
-  </nav>
+  <!-- SIDEBAR TOGGLE (Mobile) -->
+  <button class="sidebar-toggle no-print" onclick="toggleSidebar()"
+          style="position:fixed;top:20px;left:20px;z-index:300;background:var(--blue);color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer;display:none;">
+    ☰
+  </button>
 
-  <!-- ── DASHBOARD TAB ── -->
-  <div id="tabDash" class="hidden fade-up" style="max-width:1600px;margin:0 auto;padding:1.5rem 1rem;">
-
-    <!-- Meeting Banner -->
-    <div class="meet-banner mb-5">
-      <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:1rem;position:relative;z-index:1;">
-        <div>
-          <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,0.6);margin-bottom:4px;">Mesyuarat Aktif</p>
-          <h2 id="dshName" style="font-family:'Outfit',sans-serif;font-size:1.2rem;font-weight:800;margin-bottom:8px;"></h2>
-          <div style="display:flex;flex-wrap:wrap;gap:16px;font-size:.82rem;color:rgba(255,255,255,0.75);">
-            <span id="dshTarikh" style="display:flex;align-items:center;gap:5px;">
-              <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-              <span></span>
-            </span>
-            <span id="dshTempat" style="display:flex;align-items:center;gap:5px;">
-              <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
-              <span></span>
-            </span>
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
-          <a id="dshDriveLink" href="#" target="_blank" class="hidden"
-             style="display:flex;align-items:center;gap:6px;font-size:.8rem;font-weight:600;padding:.5rem 1rem;border-radius:8px;background:rgba(255,255,255,0.18);border:1.5px solid rgba(255,255,255,0.28);color:#fff;text-decoration:none;transition:background .15s;"
-             onmouseover="this.style.background='rgba(255,255,255,0.28)'"
-             onmouseout="this.style.background='rgba(255,255,255,0.18)'">
-            📁 Folder Dokumen Ahli
-          </a>
-          <p id="dshNoDrive" style="font-size:.75rem;color:rgba(255,255,255,0.45);">Folder Google Drive belum disediakan</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- KPI Cards -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem;">
-
-      <div class="card kpi-card kpi-green" style="padding:1.25rem;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.75rem;">
-          <div>
-            <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);margin-bottom:4px;">Hadir</p>
-            <p id="cHadir" style="font-family:'Outfit',sans-serif;font-size:2.4rem;font-weight:800;color:#16A34A;line-height:1;">0</p>
-          </div>
-          <div style="width:40px;height:40px;border-radius:10px;background:#DCFCE7;display:flex;align-items:center;justify-content:center;">
-            <svg style="width:20px;height:20px;color:#16A34A;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-          </div>
-        </div>
-        <div style="height:5px;background:#DCF2E0;border-radius:999px;overflow:hidden;">
-          <div id="bHadir" style="height:100%;background:linear-gradient(90deg,#22C55E,#4ADE80);border-radius:999px;width:0%;transition:width .5s;"></div>
-        </div>
-        <p id="pHadir" style="font-size:.72rem;color:var(--text-faint);margin-top:4px;">0%</p>
-      </div>
-
-      <div class="card kpi-card kpi-red" style="padding:1.25rem;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.75rem;">
-          <div>
-            <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);margin-bottom:4px;">Tidak Hadir</p>
-            <p id="cTidak" style="font-family:'Outfit',sans-serif;font-size:2.4rem;font-weight:800;color:#DC2626;line-height:1;">0</p>
-          </div>
-          <div style="width:40px;height:40px;border-radius:10px;background:#FEE2E2;display:flex;align-items:center;justify-content:center;">
-            <svg style="width:20px;height:20px;color:#DC2626;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
-          </div>
-        </div>
-        <div style="height:5px;background:#FCE2E2;border-radius:999px;overflow:hidden;">
-          <div id="bTidak" style="height:100%;background:linear-gradient(90deg,#EF4444,#F87171);border-radius:999px;width:0%;transition:width .5s;"></div>
-        </div>
-        <p id="pTidak" style="font-size:.72rem;color:var(--text-faint);margin-top:4px;">0%</p>
-      </div>
-
-      <div class="card kpi-card kpi-amber" style="padding:1.25rem;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.75rem;">
-          <div>
-            <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);margin-bottom:4px;">Belum Dihubungi</p>
-            <p id="cBelum" style="font-family:'Outfit',sans-serif;font-size:2.4rem;font-weight:800;color:#D97706;line-height:1;">0</p>
-          </div>
-          <div style="width:40px;height:40px;border-radius:10px;background:#FEF3C7;display:flex;align-items:center;justify-content:center;">
-            <svg style="width:20px;height:20px;color:#D97706;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-          </div>
-        </div>
-        <div style="height:5px;background:#FEF0C7;border-radius:999px;overflow:hidden;">
-          <div id="bBelum" style="height:100%;background:linear-gradient(90deg,#F59E0B,#FBBF24);border-radius:999px;width:0%;transition:width .5s;"></div>
-        </div>
-        <p id="pBelum" style="font-size:.72rem;color:var(--text-faint);margin-top:4px;">0%</p>
-      </div>
-
-      <div class="card kpi-card kpi-slate" style="padding:1.25rem;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.75rem;">
-          <div>
-            <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);margin-bottom:4px;">Lain-lain</p>
-            <p id="cLain" style="font-family:'Outfit',sans-serif;font-size:2.4rem;font-weight:800;color:#64748B;line-height:1;">0</p>
-          </div>
-          <div style="width:40px;height:40px;border-radius:10px;background:#F1F5F9;display:flex;align-items:center;justify-content:center;">
-            <svg style="width:20px;height:20px;color:#64748B;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          </div>
-        </div>
-        <div style="height:5px;background:#E2E8F0;border-radius:999px;overflow:hidden;">
-          <div id="bLain" style="height:100%;background:linear-gradient(90deg,#64748B,#94A3B8);border-radius:999px;width:0%;transition:width .5s;"></div>
-        </div>
-        <p id="pLain" style="font-size:.72rem;color:var(--text-faint);margin-top:4px;">0%</p>
-      </div>
-    </div>
-
-    <!-- Progress Card -->
+  <!-- ── SENARAI MESYUARAT TAB ── -->
+  <div id="tabSenaraiMesyuarat" class="hidden fade-up" style="max-width:1600px;margin:0 auto;padding:1.5rem 1rem;">
     <div class="card" style="padding:1.5rem;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem;">
-        <h3 style="font-family:'Outfit',sans-serif;font-weight:700;color:var(--blue-dark);">Kemajuan Keseluruhan</h3>
-        <span style="font-size:.82rem;color:var(--text-soft);">Jumlah: <strong id="cTotal" style="color:var(--text-mid);">0</strong> ahli</span>
-      </div>
-      <div style="width:100%;height:22px;border-radius:999px;overflow:hidden;display:flex;background:#F0F5FF;">
-        <div id="pgHadir" style="height:100%;background:linear-gradient(90deg,#22C55E,#4ADE80);transition:width .5s;width:0%;" title="Hadir"></div>
-        <div id="pgTidak" style="height:100%;background:linear-gradient(90deg,#EF4444,#F87171);transition:width .5s;width:0%;" title="Tidak Hadir"></div>
-        <div id="pgLain"  style="height:100%;background:linear-gradient(90deg,#64748B,#94A3B8);transition:width .5s;width:0%;" title="Lain-lain"></div>
-        <div id="pgBelum" style="height:100%;background:linear-gradient(90deg,#F59E0B,#FBBF24);transition:width .5s;width:0%;" title="Belum Dihubungi"></div>
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:10px;font-size:.75rem;color:var(--text-soft);">
-        <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:50%;background:#22C55E;display:inline-block;"></span>Hadir</span>
-        <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:50%;background:#EF4444;display:inline-block;"></span>Tidak Hadir</span>
-        <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:50%;background:#F59E0B;display:inline-block;"></span>Belum Dihubungi</span>
-        <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:50%;background:#94A3B8;display:inline-block;"></span>Lain-lain</span>
+      <h3 style="font-family:'Outfit',sans-serif;font-size:1.2rem;font-weight:700;color:var(--blue-dark);margin-bottom:1.25rem;">Senarai Mesyuarat</h3>
+      <div id="senaraiMesyuaratList" style="display:flex;flex-direction:column;gap:.75rem;">
+        <p style="color:var(--text-soft);">Memuatkan...</p>
       </div>
     </div>
   </div>
 
-  <!-- ── SENARAI KEHADIRAN TAB ── -->
-  <div id="tabSenarai" class="hidden fade-up" style="max-width:1600px;margin:0 auto;padding:1.5rem 1rem;">
-
-    <!-- Controls -->
-    <div class="card no-print" style="padding:.875rem 1rem;margin-bottom:1rem;">
-      <div style="display:flex;flex-wrap:wrap;gap:.625rem;align-items:center;justify-content:space-between;">
-        <div style="display:flex;flex-wrap:wrap;gap:.5rem;flex:1;">
-          <div style="position:relative;">
-            <svg style="width:14px;height:14px;position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-faint);pointer-events:none;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            <input id="srchQ" type="text" placeholder="Cari ahli, syarikat, PIC, telefon..."
-                   onkeyup="filterTable()" class="inp" style="padding-left:2rem;min-width:240px;">
+  <!-- ── TEMPLATE WHATSAPP TAB ── -->
+  <div id="tabTemplateWA" class="hidden fade-up" style="max-width:1600px;margin:0 auto;padding:1.5rem 1rem;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
+      <div class="card" style="padding:1.5rem;">
+        <h3 style="font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:700;color:var(--blue-dark);margin-bottom:1.25rem;">Tambah Template Baru</h3>
+        <div style="display:flex;flex-direction:column;gap:.875rem;">
+          <div>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Nama Template *</label>
+            <input id="waTplName" type="text" placeholder="cth: Undangan Mesyuarat" class="inp">
           </div>
-          <select id="srchStatus" onchange="filterTable()" class="inp" style="width:auto;">
-            <option value="">Semua Status</option>
-            <option>Hadir</option><option>Tidak Hadir</option>
-            <option>Belum Dihubungi</option><option>Lain-lain</option>
-          </select>
-          <select id="srchDaerah" onchange="filterTable()" class="inp" style="width:auto;">
-            <option value="">Semua Daerah</option>
-          </select>
+          <div>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Kandungan Mesej *</label>
+            <textarea id="waTplBody" placeholder="Tulis mesej di sini..." class="inp" style="min-height:120px;resize:vertical;"></textarea>
+            <p style="font-size:.72rem;color:var(--text-faint);margin-top:3px;">Gunakan {nama}, {syarikat}, {tarikh} untuk pembolehubah.</p>
+          </div>
+          <div>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Imej (Pilihan)</label>
+            <input id="waTplImage" type="file" accept="image/jpeg,image/png,image/gif" class="inp">
+            <p style="font-size:.72rem;color:var(--text-faint);margin-top:3px;">Format: JPG, PNG, GIF. Saiz maksimum: 5MB</p>
+            <div id="waTplImagePreview" class="hidden" style="margin-top:.5rem;">
+              <img id="waTplImagePreviewImg" style="max-width:100%;max-height:200px;border-radius:8px;border:1.5px solid var(--border);">
+            </div>
+          </div>
+          <button onclick="saveTpl()" class="btn btn-blue btn-shine" style="justify-content:center;">+ Simpan Template</button>
         </div>
-        <div style="display:flex;align-items:center;gap:.625rem;flex-wrap:wrap;">
-          <span id="rowCount" style="font-size:.75rem;color:var(--text-faint);font-weight:500;"></span>
-          <button onclick="exportCSV()" class="btn btn-white">
-            <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            CSV
-          </button>
-          <button onclick="doPrint()" class="btn btn-white">
-            <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-            Cetak
-          </button>
+      </div>
+      <div class="card" style="padding:1.5rem;">
+        <h3 style="font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:700;color:var(--blue-dark);margin-bottom:1.25rem;">Senarai Template</h3>
+        <p id="tplCount" style="font-size:.75rem;color:var(--text-soft);margin-bottom:1rem;">0 template</p>
+        <div id="waTemplateList" style="display:flex;flex-direction:column;gap:.75rem;max-height:400px;overflow-y:auto;">
+          <p style="font-size:.85rem;color:var(--text-faint);text-align:center;padding:2rem 0;">Belum ada template.</p>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Bulk action bar -->
-    <div id="bulkBar" style="display:none;background:#EFF6FF;border:1.5px solid var(--blue-pale);border-radius:10px;padding:.625rem 1rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center;gap:.625rem;" class="no-print">
-      <span id="bulkCount" style="font-size:.8rem;font-weight:700;color:var(--blue);">0 dipilih</span>
-      <select id="bulkStatusSel" class="inp" style="width:auto;font-size:.8rem;">
-        <option value="">Pilih Status Baru</option>
-        <option>Hadir</option><option>Tidak Hadir</option>
-        <option>Belum Dihubungi</option><option>Lain-lain</option>
-      </select>
-      <button onclick="applyBulkStatus()" class="btn btn-blue" style="font-size:.8rem;padding:.35rem .75rem;">Kemaskini</button>
-      <button onclick="clearBulkSelect()" class="btn btn-white" style="font-size:.8rem;padding:.35rem .75rem;">Batal Pilih</button>
+  <!-- ── SENARAI AHLI TAB ── -->
+  <div id="tabSenaraiAhli" class="hidden fade-up" style="max-width:1600px;margin:0 auto;padding:1.5rem 1rem;">
+    <div class="card" style="padding:1rem;margin-bottom:1rem;">
+      <div style="display:flex;flex-wrap:wrap;gap:.625rem;align-items:center;">
+        <div style="position:relative;flex:1;min-width:240px;">
+          <svg style="width:14px;height:14px;position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-faint);pointer-events:none;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input id="srchAhli" type="text" placeholder="Cari nama syarikat, nama PIC atau no. ahli..."
+                 onkeyup="filterAhliTable()" class="inp" style="padding-left:2rem;">
+        </div>
+        <select id="srchDaerahAhli" onchange="filterAhliTable()" class="inp" style="width:auto;">
+          <option value="">Semua Daerah</option>
+        </select>
+        <span id="ahliRowCount" style="font-size:.75rem;color:var(--text-faint);font-weight:500;"></span>
+      </div>
     </div>
-
-    <!-- Table -->
-    <div class="card" style="overflow:hidden;margin-bottom:1.5rem;">
+    <div class="card" style="overflow:hidden;">
       <div style="overflow-x:auto;">
-        <table style="width:100%;border-collapse:collapse;" id="mainTable">
+        <table style="width:100%;border-collapse:collapse;">
           <thead>
-            <tr id="thRow"></tr>
+            <tr style="background:var(--blue-dark);">
+              <th style="padding:.625rem 1rem;text-align:center;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">#</th>
+              <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">No. Ahli</th>
+              <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Jawatan</th>
+              <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Nama Syarikat</th>
+              <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Nama PIC</th>
+              <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">No. HP</th>
+              <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Daerah</th>
+            </tr>
           </thead>
-          <tbody id="tbBody">
-            <tr><td colspan="8" style="text-align:center;padding:3.5rem;color:var(--text-faint);">
+          <tbody id="ahliTbody">
+            <tr><td colspan="7" style="text-align:center;padding:3.5rem;color:var(--text-faint);">
               <div class="spinner spinner-blue" style="margin:0 auto 10px;"></div>
               <p>Memuatkan data...</p>
             </td></tr>
@@ -609,62 +881,161 @@
         </table>
       </div>
     </div>
+  </div>
 
-    <!-- WhatsApp Templates Section — Admin can manage, AJK can only view templates used via WA button -->
-    <div class="card admin-only" style="padding:1.5rem;">
-      <p class="sec-label">Mesej</p>
-      <h3 id="waTplFormTitle" style="font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:700;color:var(--blue-dark);margin-bottom:1.25rem;">Template WhatsApp</h3>
-      
-      <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:1.25rem;align-items:start;">
-        <!-- Form -->
+  <!-- ── NON-MEMBER CONTACTS TAB ── -->
+  <div id="tabNonMemberContacts" class="hidden fade-up" style="max-width:1600px;margin:0 auto;padding:1.5rem 1rem;">
+    <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:1.25rem;">
+      <div class="card" style="padding:1.5rem;">
+        <h3 style="font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:700;color:var(--blue-dark);margin-bottom:1.25rem;">Tambah Hubungan Luar</h3>
         <div style="display:flex;flex-direction:column;gap:.875rem;">
           <div>
-            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Nama Template *</label>
-            <input id="waTplName" type="text" placeholder="cth: Jemputan Mesyuarat Biasa" class="inp">
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Nama Penuh *</label>
+            <input id="nmcNama" type="text" placeholder="Nama penuh" class="inp">
           </div>
           <div>
-            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Teks Mesej *</label>
-            <textarea id="waTplBody" rows="6" class="inp" placeholder="Tulis mesej WhatsApp di sini...&#10;&#10;Gunakan placeholder di bawah untuk data dinamik."></textarea>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Emel *</label>
+            <input id="nmcEmail" type="email" placeholder="contoh@syarikat.com" class="inp">
           </div>
-
-          <!-- Placeholder helper -->
           <div>
-            <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);margin-bottom:4px;">Placeholder (klik untuk tambah)</p>
-            <div style="display:flex;flex-wrap:wrap;gap:4px;">
-              <span class="ph-tag" onclick="insertPh('{nama_ahli}')">{nama_ahli}</span>
-              <span class="ph-tag" onclick="insertPh('{no_ahli}')">{no_ahli}</span>
-              <span class="ph-tag" onclick="insertPh('{tarikh}')">{tarikh}</span>
-              <span class="ph-tag" onclick="insertPh('{tempat}')">{tempat}</span>
-              <span class="ph-tag" onclick="insertPh('{nama_mesyuarat}')">{nama_mesyuarat}</span>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">No. Telefon *</label>
+            <input id="nmcPhone" type="tel" placeholder="+60123456789" class="inp">
+          </div>
+          <div>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Organisasi</label>
+            <input id="nmcOrganization" type="text" placeholder="Nama syarikat/organisasi" class="inp">
+          </div>
+          <div>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Biro</label>
+            <select id="nmcBureau" class="inp">
+              <option value="">-- Tiada Biro --</option>
+              <option value="Biro Professional">Biro Professional</option>
+              <option value="Biro Kontraktor">Biro Kontraktor</option>
+              <option value="Biro International Trade">Biro International Trade</option>
+            </select>
+          </div>
+          <button onclick="addNonMemberContact()" class="btn btn-blue btn-shine" style="justify-content:center;">+ Tambah Hubungan</button>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <h3 style="font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:700;color:var(--blue-dark);margin-bottom:1.25rem;">Muat Naik CSV/Excel</h3>
+        <div style="display:flex;flex-direction:column;gap:.875rem;">
+          <div>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Fail CSV/Excel</label>
+            <input id="nmcFileUpload" type="file" accept=".csv,.xlsx,.xls" class="inp">
+            <p style="font-size:.72rem;color:var(--text-faint);margin-top:3px;">Format: nama, emel, telefon, organisasi</p>
+          </div>
+          <button onclick="uploadNonMemberContacts()" class="btn btn-green btn-shine" style="justify-content:center;">📤 Muat Naik</button>
+          <div id="nmcUploadStatus" class="hidden" style="background:#DCFCE7;border:1.5px solid #86EFAC;color:#15803D;border-radius:8px;padding:.625rem .875rem;font-size:.8rem;font-weight:600;"></div>
+        </div>
+      </div>
+      <div class="card" style="padding:1.5rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+          <h3 style="font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:700;color:var(--blue-dark);">Senarai Hubungan Luar</h3>
+          <span id="nmcCount" style="font-size:.75rem;color:var(--text-soft);font-weight:500;">0 hubungan</span>
+        </div>
+        <div class="card" style="padding:.75rem;margin-bottom:1rem;">
+          <div style="display:flex;gap:.625rem;align-items:center;">
+            <div style="position:relative;flex:1;">
+              <svg style="width:14px;height:14px;position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-faint);pointer-events:none;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <input id="srchNmc" type="text" placeholder="Cari nama, emel atau organisasi..."
+                     onkeyup="filterNmcTable()" class="inp" style="padding-left:2rem;">
             </div>
           </div>
-
-          <div style="display:flex;gap:.5rem;">
-            <button onclick="saveTpl()" class="btn btn-green" style="flex:1;justify-content:center;">
-              <span id="waTplSaveLbl">Simpan Template</span>
-            </button>
-            <button onclick="cancelEditTpl()" id="waTplCancelBtn" class="btn btn-white hidden" style="flex:1;justify-content:center;">Batal</button>
-          </div>
         </div>
-
-        <!-- Template List -->
-        <div>
-          <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);margin-bottom:.75rem;">Senarai Template (<span id="tplCount">0</span>)</p>
-          <div id="waTplList" style="display:flex;flex-direction:column;gap:.5rem;max-height:300px;overflow-y:auto;">
-            <p style="font-size:.85rem;color:var(--text-faint);text-align:center;padding:1rem 0;">Belum ada template</p>
+        <div style="overflow:hidden;">
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;">
+              <thead>
+                <tr style="background:var(--blue-dark);">
+                  <th style="padding:.625rem 1rem;text-align:center;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">#</th>
+                  <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Nama</th>
+                  <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Emel</th>
+                  <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">No. Telefon</th>
+                  <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Organisasi</th>
+                  <th style="padding:.625rem 1rem;text-align:center;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Tindakan</th>
+                </tr>
+              </thead>
+              <tbody id="nmcTbody">
+                <tr><td colspan="6" style="text-align:center;padding:3.5rem;color:var(--text-faint);">
+                  <div class="spinner spinner-blue" style="margin:0 auto 10px;"></div>
+                  <p>Memuatkan data...</p>
+                </td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
-      <input type="hidden" id="waTplId">
-      <div style="margin-top:1.25rem;">
-        <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);margin-bottom:.625rem;">Blast Pantas</p>
-        <div style="display:flex;flex-wrap:wrap;gap:.5rem;">
-          <button onclick="prepareBlast('Belum Dihubungi')" class="btn btn-white" style="font-size:.78rem;">📤 Blast Belum Dihubungi</button>
-          <button onclick="prepareBlast('Semua')" class="btn btn-white" style="font-size:.78rem;">📤 Blast Semua</button>
+    </div>
+  </div>
+
+  <!-- ── JADUAL MESYUARAT TAB ── -->
+  <div id="tabJadual" class="hidden fade-up" style="max-width:1600px;margin:0 auto;padding:1.5rem 1rem;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
+      <div class="card" style="padding:1.5rem;">
+        <h3 style="font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:700;color:var(--blue-dark);margin-bottom:1.25rem;">Tambah Mesyuarat Baru</h3>
+        <div style="display:flex;flex-direction:column;gap:.875rem;">
+          <div>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">ID Mesyuarat *</label>
+            <input id="fMeetId" type="text" placeholder="cth: MAT-2027" class="inp">
+            <p style="font-size:.72rem;color:var(--text-faint);margin-top:3px;">Huruf besar, tiada ruang</p>
+          </div>
+          <div>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Nama Penuh *</label>
+            <input id="fMeetNama" type="text" placeholder="Mesyuarat Agung Tahunan 2027" class="inp">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+            <div>
+              <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Tarikh</label>
+              <input id="fMeetTarikh" type="date" class="inp">
+            </div>
+            <div>
+              <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Tempat</label>
+              <input id="fMeetTempat" type="text" placeholder="Johor Bahru" class="inp">
+            </div>
+          </div>
+          <button onclick="createMeeting()" class="btn btn-blue btn-shine" style="justify-content:center;">+ Cipta Mesyuarat</button>
         </div>
-        <p style="font-size:.72rem;color:var(--text-faint);margin-top:.5rem;">Antrian disimpan ke Supabase. Jalankan <code>node scripts/blast-runner.js</code> untuk hantar via WAHA.</p>
-        <p style="font-size:.72rem;color:var(--text-faint);margin-top:.25rem;">Lihat data ahli: <a href="https://dpmmjohor.github.io/SISTEM-AHLI-DPMM-JOHOR/" target="_blank" style="color:var(--blue);font-weight:600;">Sistem Ahli DPMM →</a></p>
       </div>
+      <div class="card" style="padding:1.5rem;">
+        <h3 style="font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:700;color:var(--blue-dark);margin-bottom:1.25rem;">Kalendar Mesyuarat</h3>
+        <div id="calendarContainer" style="min-height:300px;background:var(--blue-light);border-radius:8px;padding:1rem;">
+          <p style="color:var(--text-soft);text-align:center;padding:2rem;">Kalendar akan dipaparkan di sini.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DASHBOARD TAB (Removed - functionality moved to other tabs) ── -->
+  <div id="tabDash" class="hidden fade-up" style="max-width:1600px;margin:0 auto;padding:1.5rem 1rem;">
+    <div class="card" style="padding:2rem;text-align:center;">
+      <h3 style="font-family:'Outfit',sans-serif;font-size:1.2rem;font-weight:700;color:var(--blue-dark);margin-bottom:1rem;">Dashboard</h3>
+      <p style="color:var(--text-soft);">Gunakan menu di sebelah kiri untuk mengakses ciri-ciri sistem.</p>
+    </div>
+  </div>
+
+  <!-- ── SENARAI KEHADIRAN TAB (Removed - functionality moved to Senarai Mesyuarat) ── -->
+  <div id="tabSenarai" class="hidden fade-up" style="max-width:1600px;margin:0 auto;padding:1.5rem 1rem;">
+    <div class="card" style="padding:2rem;text-align:center;">
+      <h3 style="font-family:'Outfit',sans-serif;font-size:1.2rem;font-weight:700;color:var(--blue-dark);margin-bottom:1rem;">Senarai Kehadiran</h3>
+      <p style="color:var(--text-soft);">Gunakan tab "Senarai Mesyuarat" untuk mengurus kehadiran.</p>
+    </div>
+  </div>
+
+  <!-- ── KEHADIRAN TAB ── -->
+  <div id="tabKehadiran" class="hidden fade-up" style="max-width:1600px;margin:0 auto;padding:1.5rem 1rem;">
+    <div class="card" style="padding:2rem;text-align:center;">
+      <h3 style="font-family:'Outfit',sans-serif;font-size:1.2rem;font-weight:700;color:var(--blue-dark);margin-bottom:1rem;">Kehadiran</h3>
+      <p style="color:var(--text-soft);">Gunakan tab "Senarai Mesyuarat" untuk mengurus kehadiran.</p>
+    </div>
+  </div>
+
+  <!-- ── LAPORAN TAB ── -->
+  <div id="tabLaporan" class="hidden fade-up" style="max-width:1600px;margin:0 auto;padding:1.5rem 1rem;">
+    <div class="card" style="padding:2rem;text-align:center;">
+      <h3 style="font-family:'Outfit',sans-serif;font-size:1.2rem;font-weight:700;color:var(--blue-dark);margin-bottom:1rem;">Laporan</h3>
+      <p style="color:var(--text-soft);">Ciri laporan akan ditambah kemudian.</p>
     </div>
   </div>
 
@@ -714,6 +1085,44 @@
                 <input id="fMeetTempat" type="text" placeholder="Johor Bahru" class="inp">
               </div>
             </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+              <div>
+                <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Jenis Acara</label>
+                <select id="fMeetEventType" class="inp">
+                  <option value="meeting">Mesyuarat</option>
+                  <option value="seminar">Seminar</option>
+                  <option value="workshop">Workshop</option>
+                  <option value="networking">Networking</option>
+                  <option value="training">Latihan</option>
+                  <option value="other">Lain-lain</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Biro</label>
+                <select id="fMeetBureau" class="inp">
+                  <option value="">-- Tiada Biro --</option>
+                  <option value="Biro Professional">Biro Professional</option>
+                  <option value="Biro Kontraktor">Biro Kontraktor</option>
+                  <option value="Biro International Trade">Biro International Trade</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Saluran Blast</label>
+              <div style="display:flex;gap:.5rem;">
+                <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--text-mid);cursor:pointer;">
+                  <input type="checkbox" id="fMeetBlastWA" checked> WhatsApp
+                </label>
+                <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--text-mid);cursor:pointer;">
+                  <input type="checkbox" id="fMeetBlastEmail"> Emel
+                </label>
+              </div>
+            </div>
+            <div>
+              <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Jadual Peringatan</label>
+              <input id="fMeetReminder" type="datetime-local" class="inp">
+              <p style="font-size:.72rem;color:var(--text-faint);margin-top:3px;">Kosongkan jika tiada peringatan automatik</p>
+            </div>
             <div>
               <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Link Google Drive (manual)</label>
               <input id="fMeetDrive" type="text" placeholder="https://drive.google.com/..." class="inp">
@@ -721,7 +1130,7 @@
             <div id="autoFolderNote" class="hidden" style="background:#DCFCE7;border:1.5px solid #86EFAC;color:#15803D;border-radius:8px;padding:.625rem .875rem;font-size:.8rem;font-weight:600;">
               ✅ Google Drive disambungkan. Folder auto akan dicipta.
             </div>
-            <button onclick="createMeeting()" id="btnCreateMeet" class="btn btn-blue" style="width:100%;justify-content:center;padding:.7rem;">
+            <button onclick="createMeeting()" id="btnCreateMeet" class="btn btn-blue btn-shine" style="width:100%;justify-content:center;padding:.7rem;">
               <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
               Cipta &amp; Jana Rekod Kehadiran
             </button>
@@ -764,8 +1173,17 @@
               <option value="admin">Admin Penuh</option>
             </select>
           </div>
+          <div>
+            <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Biro</label>
+            <select id="fUserBureau" class="inp">
+              <option value="">-- Tiada Biro --</option>
+              <option value="Biro Professional">Biro Professional</option>
+              <option value="Biro Kontraktor">Biro Kontraktor</option>
+              <option value="Biro International Trade">Biro International Trade</option>
+            </select>
+          </div>
         </div>
-        <button onclick="saveNewUser()" class="btn btn-blue" style="margin-top:.875rem;">+ Tambah Pengguna</button>
+        <button onclick="saveNewUser()" class="btn btn-blue btn-shine" style="margin-top:.875rem;">+ Tambah Pengguna</button>
       </div>
       <div class="card" style="overflow:hidden;">
         <div style="padding:1rem 1.25rem;background:var(--blue-light);border-bottom:1.5px solid var(--border);">
@@ -778,11 +1196,12 @@
               <th style="padding:.7rem 1.25rem;text-align:left;font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.8);">ID / Emel</th>
               <th style="padding:.7rem 1.25rem;text-align:left;font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.8);">Nama</th>
               <th style="padding:.7rem 1.25rem;text-align:left;font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.8);">Peranan</th>
+              <th style="padding:.7rem 1.25rem;text-align:left;font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.8);">Biro</th>
               <th style="padding:.7rem 1.25rem;text-align:left;font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.8);">Status</th>
             </tr>
           </thead>
           <tbody id="userBody">
-            <tr><td colspan="4" style="text-align:center;padding:3rem;color:var(--text-faint);">Memuatkan...</td></tr>
+            <tr><td colspan="5" style="text-align:center;padding:3rem;color:var(--text-faint);">Memuatkan...</td></tr>
           </tbody>
         </table>
       </div>
@@ -868,8 +1287,8 @@
       </div>
     </div>
     <div style="padding:1rem 1.5rem;border-top:1.5px solid var(--border);display:flex;gap:.625rem;">
-      <button onclick="closeModal()" class="btn btn-white" style="flex:1;justify-content:center;">Batal</button>
-      <button onclick="saveStatus()" class="btn btn-blue" style="flex:1;justify-content:center;">Simpan Status</button>
+      <button onclick="closeModal()" class="btn btn-white btn-shine" style="flex:1;justify-content:center;">Batal</button>
+      <button onclick="saveStatus()" class="btn btn-blue btn-shine" style="flex:1;justify-content:center;">Simpan Status</button>
     </div>
   </div>
 </div>
@@ -892,11 +1311,56 @@
       <div id="waTplPreview" style="background:var(--blue-light);border:1.5px solid var(--border);border-radius:10px;padding:.875rem;font-size:.82rem;color:var(--text-mid);min-height:80px;white-space:pre-wrap;line-height:1.6;">Pilih template di atas untuk preview</div>
     </div>
     <div style="padding:1rem 1.5rem;border-top:1.5px solid var(--border);display:flex;gap:.625rem;">
-      <button onclick="closeWaTplModal()" class="btn btn-white" style="flex:1;justify-content:center;">Batal</button>
-      <button onclick="sendWA()" id="btnSendWA" class="btn btn-green" style="flex:1;justify-content:center;" disabled>
+      <button onclick="closeWaTplModal()" class="btn btn-white btn-shine" style="flex:1;justify-content:center;">Batal</button>
+      <button onclick="sendWA()" id="btnSendWA" class="btn btn-green btn-shine" style="flex:1;justify-content:center;" disabled>
         <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
         Hantar WhatsApp
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ REMINDER MODAL ══ -->
+<div id="reminderModal" class="hidden" style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:1rem;background:rgba(30,58,138,0.45);backdrop-filter:blur(5px);">
+  <div style="background:#fff;border-radius:18px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(30,58,138,0.25);">
+    <div style="padding:1.25rem 1.5rem;border-bottom:1.5px solid var(--border);">
+      <h3 style="font-family:'Outfit',sans-serif;font-weight:700;color:var(--blue-dark);">Jadual Peringatan Automatik</h3>
+    </div>
+    <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem;">
+      <input type="hidden" id="reminderEventId">
+      <div>
+        <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Tarikh & Masa *</label>
+        <input id="reminderScheduledTime" type="datetime-local" class="inp">
+      </div>
+      <div>
+        <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Penerima</label>
+        <select id="reminderRecipientFilter" class="inp">
+          <option value="all">Semua Peserta</option>
+          <option value="non_responders">Belum Respons Sahaja</option>
+          <option value="confirmed">Sahkan Hadir Sahaja</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Template *</label>
+        <select id="reminderTemplate" class="inp">
+          <option value="">-- Pilih Template --</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);display:block;margin-bottom:5px;">Saluran</label>
+        <div style="display:flex;gap:.5rem;">
+          <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--text-mid);cursor:pointer;">
+            <input type="checkbox" id="reminderBlastWA" checked> WhatsApp
+          </label>
+          <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--text-mid);cursor:pointer;">
+            <input type="checkbox" id="reminderBlastEmail"> Emel
+          </label>
+        </div>
+      </div>
+    </div>
+    <div style="padding:1rem 1.5rem;border-top:1.5px solid var(--border);display:flex;gap:.625rem;">
+      <button onclick="closeReminderModal()" class="btn btn-white btn-shine" style="flex:1;justify-content:center;">Batal</button>
+      <button onclick="saveReminderFromModal()" class="btn btn-blue btn-shine" style="flex:1;justify-content:center;">Jadualkan</button>
     </div>
   </div>
 </div>
@@ -908,7 +1372,8 @@
 
 <script>
 // ── CONFIG ──
-const SUPABASE_URL = 'https://lzoloupwtqmjyupvofhh.supabase.co';
+// Load environment variables from CONFIG object or fallback to defaults
+const SUPABASE_URL = (typeof CONFIG !== 'undefined' && CONFIG.SUPABASE_URL) ? CONFIG.SUPABASE_URL : 'https://lzoloupwtqmjyupvofhh.supabase.co';
 const SUPABASE_KEY = (typeof CONFIG !== 'undefined' && CONFIG.SUPABASE_KEY && !CONFIG.SUPABASE_KEY.startsWith('YOUR_'))
   ? CONFIG.SUPABASE_KEY
   : (() => { throw new Error('SUPABASE_KEY not configured. Please set CONFIG.SUPABASE_KEY in config-local.js'); })();
@@ -1074,14 +1539,11 @@ function doLogout(){
 async function bootApp(){
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
-  document.getElementById('hdrName').textContent=user.nama;
+  // Update sidebar user display
+  document.getElementById('sbUserName').textContent=user.nama;
   if(isAdmin()){
-    document.getElementById('hdrBadge').textContent='Admin';
-    document.getElementById('hdrBadge').style.cssText='background:#FEF9C3;color:#A16207;font-size:.68rem;padding:.15rem .55rem;border-radius:999px;font-weight:700;';
     document.querySelectorAll('.admin-only').forEach(el=>el.classList.remove('hidden'));
   }else{
-    document.getElementById('hdrBadge').textContent='AJK / Staf';
-    document.getElementById('hdrBadge').style.cssText='background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.85);font-size:.68rem;padding:.15rem .55rem;border-radius:999px;font-weight:600;';
     document.querySelectorAll('.admin-only').forEach(el=>el.classList.add('hidden'));
   }
   const aimanBtn=document.getElementById('aimanBtn');
@@ -1112,6 +1574,8 @@ async function loadMeetings(){
   });
   meeting=data.find(m=>m.aktif)||data[0];
   if(meeting) sel.value=meeting.mesyuarat_id;
+  // Update sidebar meeting count
+  document.getElementById('sbMeetCount').textContent=data.length;
   renderMeetList(data); await loadKehadiran();
 }
 async function onMeetingChange(){
@@ -1135,9 +1599,9 @@ function renderMeetList(list){
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0;">
           ${m.aktif?'<span style="background:#DCFCE7;color:#15803D;font-size:.68rem;padding:.15rem .55rem;border-radius:999px;font-weight:700;">Aktif</span>':''}
-          ${!m.aktif?`<button onclick="setActive('${m.mesyuarat_id}')" style="background:var(--blue-light);border:1.5px solid var(--blue-pale);color:var(--blue);font-size:.7rem;padding:.2rem .55rem;border-radius:6px;cursor:pointer;font-weight:600;">Set Aktif</button>`:''}
-          ${!m.gdrive_folder_url?`<button onclick="doSetupDrive('${m.mesyuarat_id}')" style="background:#EFF6FF;border:1.5px solid #BFDBFE;color:var(--blue);font-size:.7rem;padding:.2rem .55rem;border-radius:6px;cursor:pointer;font-weight:600;">📁 Jana Folder</button>`:''}
-          ${isAdmin()?`<button onclick="deleteMeeting('${m.mesyuarat_id}')" style="background:#FEF2F2;border:1.5px solid #FECACA;color:var(--red);font-size:.7rem;padding:.2rem .55rem;border-radius:6px;cursor:pointer;font-weight:600;">🗑️</button>`:''}
+          ${!m.aktif?`<button onclick="setActive('${m.mesyuarat_id}')" class="btn btn-blue btn-shine" style="background:var(--blue-light);border:1.5px solid var(--blue-pale);color:var(--blue);font-size:.7rem;padding:.2rem .55rem;border-radius:6px;cursor:pointer;font-weight:600;">Set Aktif</button>`:''}
+          ${!m.gdrive_folder_url?`<button onclick="doSetupDrive('${m.mesyuarat_id}')" class="btn btn-blue btn-shine" style="background:#EFF6FF;border:1.5px solid #BFDBFE;color:var(--blue);font-size:.7rem;padding:.2rem .55rem;border-radius:6px;cursor:pointer;font-weight:600;">📁 Jana Folder</button>`:''}
+          ${isAdmin()?`<button onclick="deleteMeeting('${m.mesyuarat_id}')" class="btn btn-red btn-shine" style="background:#FEF2F2;border:1.5px solid #FECACA;color:var(--red);font-size:.7rem;padding:.2rem .55rem;border-radius:6px;cursor:pointer;font-weight:600;">🗑️</button>`:''}
         </div>
       </div>
     </div>
@@ -1220,8 +1684,8 @@ function renderTable(){
     const badge=badgeClass(r.status), noAhli=esc(r.NO_AHLI||''), nama=esc(r.NAMA_AHLI||'-'), catatan=esc(r.catatan||'');
     const phone=cleanPhone(r.NO_HP);
     // Action buttons
-    const waBtn=(phone&&canSend())?`<button onclick="openWATpl('${phone}','${noAhli}','${nama}')" title="WhatsApp" style="background:#25D366;color:#fff;border:none;border-radius:6px;padding:.3rem .6rem;cursor:pointer;font-size:.7rem;font-weight:600;transition:opacity .15s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">WA</button>`:'';
-    const editBtn=`<button onclick="openModal('${noAhli}','${nama}','${r.status}','${catatan}')" style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:.3rem .6rem;cursor:pointer;font-size:.7rem;font-weight:600;transition:opacity .15s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">Edit</button>`;
+    const waBtn=(phone&&canSend())?`<button onclick="openWATpl('${phone}','${noAhli}','${nama}')" title="WhatsApp" class="btn btn-green btn-shine" style="background:#25D366;color:#fff;border:none;border-radius:6px;padding:.3rem .6rem;cursor:pointer;font-size:.7rem;font-weight:600;transition:opacity .15s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">WA</button>`:'';
+    const editBtn=`<button onclick="openModal('${noAhli}','${nama}','${r.status}','${catatan}')" class="btn btn-blue btn-shine" style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:.3rem .6rem;cursor:pointer;font-size:.7rem;font-weight:600;transition:opacity .15s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">Edit</button>`;
     // Merged member cell
     const memberCell=`<div>
       <div class="member-cell-id">${r.NO_AHLI||'-'}</div>
@@ -1325,12 +1789,13 @@ async function renderTplList(){
         </div>
         <div style="display:flex;gap:4px;flex-shrink:0;">
           ${isAdmin()?`
-          <button onclick="editTpl(${t.id})" style="background:var(--blue-light);border:1.5px solid var(--blue-pale);color:var(--blue);font-size:.72rem;padding:.25rem .55rem;border-radius:6px;cursor:pointer;font-weight:600;transition:background .15s;" onmouseover="this.style.background='var(--blue-pale)'" onmouseout="this.style.background='var(--blue-light)'">✏️ Edit</button>
-          <button onclick="deleteTpl(${t.id})" style="background:var(--red-light);border:1.5px solid var(--red-mid);color:var(--red);font-size:.72rem;padding:.25rem .55rem;border-radius:6px;cursor:pointer;font-weight:600;transition:background .15s;" onmouseover="this.style.background='#FEE2E2'" onmouseout="this.style.background='var(--red-light)'">🗑️ Padam</button>
+          <button onclick="editTpl(${t.id})" class="btn btn-blue btn-shine" style="background:var(--blue-light);border:1.5px solid var(--blue-pale);color:var(--blue);font-size:.72rem;padding:.25rem .55rem;border-radius:6px;cursor:pointer;font-weight:600;transition:background .15s;" onmouseover="this.style.background='var(--blue-pale)'" onmouseout="this.style.background='var(--blue-light)'">✏️ Edit</button>
+          <button onclick="deleteTpl(${t.id})" class="btn btn-red btn-shine" style="background:var(--red-light);border:1.5px solid var(--red-mid);color:var(--red);font-size:.72rem;padding:.25rem .55rem;border-radius:6px;cursor:pointer;font-weight:600;transition:background .15s;" onmouseover="this.style.background='#FEE2E2'" onmouseout="this.style.background='var(--red-light)'">🗑️ Padam</button>
           `:''}
         </div>
       </div>
       <div style="font-size:.78rem;color:var(--text-soft);background:var(--blue-light);border-radius:7px;padding:.5rem .75rem;white-space:pre-wrap;max-height:70px;overflow:hidden;line-height:1.5;">${esc(t.kandungan).substring(0,200)}${t.kandungan.length>200?'…':''}</div>
+      ${t.image_url?`<div style="margin-top:.5rem;"><img src="${t.image_url}" style="max-width:100%;max-height:100px;border-radius:6px;border:1px solid var(--border);"></div>`:''}
     </div>
   `).join('');
 }
@@ -1340,19 +1805,123 @@ async function saveTpl(){
   const kandungan=document.getElementById('waTplBody').value.trim();
   const idRaw=document.getElementById('waTplId').value;
   const id=idRaw?parseInt(idRaw):null;
+  const imageFile=document.getElementById('waTplImage').files[0];
+  
   if(!nama||!kandungan){toast('⚠️ Nama dan teks mesej wajib diisi.','err');return;}
+  
+  let imageUrl = null;
+  
+  // Handle image upload if provided
+  if(imageFile){
+    // Validate image size (5MB max)
+    if(imageFile.size > 5 * 1024 * 1024){
+      toast('⚠️ Saiz imej terlalu besar. Maksimum 5MB.','err');
+      return;
+    }
+    
+    // Validate image format
+    const validFormats = ['image/jpeg', 'image/png', 'image/gif'];
+    if(!validFormats.includes(imageFile.type)){
+      toast('⚠️ Format imej tidak sah. Gunakan JPG, PNG atau GIF.','err');
+      return;
+    }
+    
+    try{
+      imageUrl = await uploadTemplateImage(imageFile);
+    }catch(error){
+      toast('❌ Gagal memuat naik imej: '+error.message,'err');
+      return;
+    }
+  }
+  
   if(id){
     // Update existing
-    const{error}=await db.from('DPMM_TEMPLATES').update({nama,kandungan,updated_at:new Date().toISOString()}).eq('id',id);
+    const updateData = {nama,kandungan,updated_at:new Date().toISOString()};
+    if(imageUrl) updateData.image_url = imageUrl;
+    
+    const{error}=await db.from('DPMM_TEMPLATES').update(updateData).eq('id',id);
     if(error){toast('❌ Gagal kemaskini: '+error.message,'err');return;}
   }else{
     // Insert new — template_key = timestamp int
-    const{error}=await db.from('DPMM_TEMPLATES').insert({template_key:Date.now(),nama,kandungan,created_by:user.user_id});
+    const insertData = {template_key:Date.now(),nama,kandungan,created_by:user.user_id};
+    if(imageUrl) insertData.image_url = imageUrl;
+    
+    const{error}=await db.from('DPMM_TEMPLATES').insert(insertData);
     if(error){toast('❌ Gagal simpan: '+error.message,'err');return;}
   }
   cancelEditTpl();
   await renderTplList();
   toast('✅ Template '+(id?'dikemaskini':'disimpan')+'!');
+}
+
+/**
+ * Upload template image to Supabase Storage
+ */
+async function uploadTemplateImage(file){
+  const fileName = `template-${Date.now()}-${file.name}`;
+  const { data, error } = await supabase.storage
+    .from('template-images')
+    .upload(fileName, file);
+  
+  if(error) throw error;
+  
+  // Get public URL
+  const { data: { publicUrl } } = supabase.storage
+    .from('template-images')
+    .getPublicUrl(fileName);
+  
+  return publicUrl;
+}
+
+/**
+ * Handle image file selection for preview
+ */
+document.getElementById('waTplImage').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  const previewDiv = document.getElementById('waTplImagePreview');
+  const previewImg = document.getElementById('waTplImagePreviewImg');
+  
+  if(file){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      previewImg.src = e.target.result;
+      previewDiv.classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+  }else{
+    previewDiv.classList.add('hidden');
+  }
+});
+
+/**
+ * Generate QR code for meeting
+ */
+async function generateEventQRCodeForMeeting(meetingId){
+  try{
+    const container = document.getElementById('eventQRCodeContainer');
+    container.innerHTML = '<div class="spinner spinner-blue" style="margin:0 auto;"></div><p style="text-align:center;color:var(--text-soft);margin-top:.5rem;">Menjana QR code...</p>';
+    
+    const { dataUrl, token } = await generateAndDisplayEventQR(meetingId, 'eventQRCodeContainer');
+    
+    // Add download button
+    container.innerHTML += `
+      <div style="text-align:center;margin-top:1rem;">
+        <button onclick="downloadQRCode('${dataUrl}', 'qr-code-${meetingId}.png')" class="btn btn-green btn-shine" style="justify-content:center;font-size:.85rem;">📥 Muat Turun QR Code</button>
+      </div>
+    `;
+    
+    // Store token in database
+    await supabase
+      .from('DPMM_MESYUARAT')
+      .update({ qr_token: token })
+      .eq('mesyuarat_id', meetingId);
+    
+    toast('✅ QR code berjaya dijana!');
+  }catch(error){
+    console.error('Error generating QR code:', error);
+    document.getElementById('eventQRCodeContainer').innerHTML = '<p style="text-align:center;color:var(--red);">Ralat menjana QR code</p>';
+    toast('❌ Gagal menjana QR code: '+error.message,'err');
+  }
 }
 
 function editTpl(id){
@@ -1448,13 +2017,46 @@ async function createMeeting(){
   const nama=document.getElementById('fMeetNama').value.trim();
   const tarikh=document.getElementById('fMeetTarikh').value;
   const tempat=document.getElementById('fMeetTempat').value.trim();
+  const eventType=document.getElementById('fMeetEventType').value;
+  const bureau=document.getElementById('fMeetBureau').value;
+  const blastWA=document.getElementById('fMeetBlastWA').checked;
+  const blastEmail=document.getElementById('fMeetBlastEmail').checked;
+  const reminder=document.getElementById('fMeetReminder').value;
   const driveM=document.getElementById('fMeetDrive').value.trim();
   if(!meetId||!nama){toast('⚠️ ID dan Nama wajib diisi.','err');return;}
+  
+  // Validate bureau access
+  if(bureau && !validateBureauAccess(bureau)) return;
+  
   const btn=document.getElementById('btnCreateMeet');
   btn.innerHTML='<div class="spinner" style="width:15px;height:15px;"></div>&nbsp;Mencipta...'; btn.disabled=true;
+  
+  // Build blast channels array
+  const blastChannels = [];
+  if(blastWA) blastChannels.push('whatsapp');
+  if(blastEmail) blastChannels.push('email');
+  
   let driveUrl=driveM||null, driveId=null;
   if(!driveM&&gToken){try{const r=await createDriveFolder(meetId);driveUrl=r.url;driveId=r.id;toast('📁 Folder Drive dijana');}catch(e){console.warn(e);}}
-  const{error}=await db.from('DPMM_MESYUARAT').insert({mesyuarat_id:meetId,nama,tarikh:tarikh||null,tempat:tempat||null,gdrive_folder_id:driveId,gdrive_folder_url:driveUrl,aktif:false,dibuat_oleh:user.user_id,dibuat_pada:new Date().toISOString(),dikemaskini_pada:new Date().toISOString()});
+  
+  const insertData={
+    mesyuarat_id:meetId,
+    nama,
+    tarikh:tarikh||null,
+    tempat:tempat||null,
+    event_type:eventType,
+    bureau:bureau||null,
+    blast_channels:blastChannels.length>0?blastChannels:null,
+    reminder_schedule:reminder||null,
+    gdrive_folder_id:driveId,
+    gdrive_folder_url:driveUrl,
+    aktif:false,
+    dibuat_oleh:user.user_id,
+    dibuat_pada:new Date().toISOString(),
+    dikemaskini_pada:new Date().toISOString()
+  };
+  
+  const{error}=await db.from('DPMM_MESYUARAT').insert(insertData);
   if(error){toast('❌ '+(error.message.includes('unique')?'ID sudah wujud.':error.message),'err');btn.innerHTML='<svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Cipta &amp; Jana Rekod Kehadiran';btn.disabled=false;return;}
   let total=0;
   try{
@@ -1466,8 +2068,10 @@ async function createMeeting(){
     total=await seedAttendance(meetId);
   }
   toast(`✅ ${meetId} dicipta! ${total} rekod dijana.`);
-  logAudit('CIPTA_MESYUARAT','DPMM_MESYUARAT',meetId,{nama,total_rekod:total});
-  ['fMeetId','fMeetNama','fMeetTarikh','fMeetTempat','fMeetDrive'].forEach(id=>{document.getElementById(id).value='';});
+  logAudit('CIPTA_MESYUARAT','DPMM_MESYUARAT',meetId,{nama,total_rekod:total,event_type:eventType,bureau:bureau});
+  ['fMeetId','fMeetNama','fMeetTarikh','fMeetTempat','fMeetDrive','fMeetEventType','fMeetBureau','fMeetReminder'].forEach(id=>{document.getElementById(id).value='';});
+  document.getElementById('fMeetBlastWA').checked=true;
+  document.getElementById('fMeetBlastEmail').checked=false;
   btn.innerHTML='<svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Cipta &amp; Jana Rekod Kehadiran';
   btn.disabled=false; await loadMeetings();
 }
@@ -1480,13 +2084,14 @@ async function seedAttendance(meetId){
 
 // ── USERS ──
 async function loadUsers(){
-  const{data}=await db.from('DPMM_USERS').select('user_id,nama,peranan,aktif').order('id'); if(!data)return;
+  const{data}=await db.from('DPMM_USERS').select('user_id,nama,peranan,aktif,bureau').order('id'); if(!data)return;
   const roleLabel={admin:'🔴 Pentadbir Utama',user:'🟡 Pentadbir',ajk:'🟢 AJK / Staf'};
   document.getElementById('userBody').innerHTML=data.map(u=>`
     <tr style="border-bottom:1px solid #F0F5FF;" onmouseover="this.style.background='var(--blue-light)'" onmouseout="this.style.background=''">
       <td style="padding:.7rem 1.25rem;font-size:.82rem;font-family:monospace;color:var(--text-soft);">${u.user_id}</td>
       <td style="padding:.7rem 1.25rem;font-size:.85rem;font-weight:700;color:var(--text-mid);">${u.nama}</td>
       <td style="padding:.7rem 1.25rem;"><span style="font-size:.72rem;padding:.2rem .65rem;border-radius:999px;font-weight:700;${u.peranan==='admin'?'background:#FEE2E2;color:#B91C1C;':u.peranan==='ajk'?'background:#DCFCE7;color:#15803D;':'background:#FEF9C3;color:#A16207;'}">${roleLabel[u.peranan]||u.peranan}</span></td>
+      <td style="padding:.7rem 1.25rem;font-size:.75rem;color:var(--text-mid);">${u.bureau||'-'}</td>
       <td style="padding:.7rem 1.25rem;"><span style="font-size:.72rem;padding:.2rem .65rem;border-radius:999px;font-weight:700;${u.aktif?'background:#DCFCE7;color:#15803D;':'background:#FEE2E2;color:#B91C1C;'}">${u.aktif?'Aktif':'Tidak Aktif'}</span></td>
     </tr>
   `).join('');
@@ -1558,16 +2163,431 @@ function doPrint(){
 function showTab(tab){
   // Guard: AJK/Staff cannot access admin tab under any circumstance
   if(tab==='admin' && !isAdmin()) return;
-  ['dash','senarai','admin'].forEach(t=>{
+  ['dash','senarai','kehadiran','admin','laporan','senaraiMesyuarat','templateWA','senaraiAhli','nonMemberContacts','jadual'].forEach(t=>{
     const el=document.getElementById('tab'+capitalize(t)),nav=document.getElementById('nav'+capitalize(t));
     if(el)el.classList.add('hidden');
-    if(nav)nav.classList.remove('nav-tab-active');
+    if(nav)nav.classList.remove('active');
   });
   document.getElementById('tab'+capitalize(tab)).classList.remove('hidden');
-  document.getElementById('nav'+capitalize(tab)).classList.add('nav-tab-active');
+  document.getElementById('nav'+capitalize(tab)).classList.add('active');
+  
+  // Load data based on tab
+  if(tab==='senaraiMesyuarat'){renderSenaraiMesyuarat();}
+  if(tab==='templateWA'){renderWaTemplates();}
+  if(tab==='senaraiAhli'){loadAhliData();}
+  if(tab==='nonMemberContacts'){initNonMemberContactsTab();}
+  if(tab==='jadual'){renderCalendar();}
   if(tab==='admin'){showAdminSub('Mesyuarat');loadUsers();}
-  if(tab==='senarai'){renderTable();renderTplList();}
+  if(tab==='senarai'){loadKehadiran();renderTable();renderTplList();}
+  
+  // Close sidebar on mobile after selection
+  if(window.innerWidth<=1024)toggleSidebar();
 }
+
+// ── SIDEBAR TOGGLE ──
+function toggleSidebar(){
+  const sb=document.getElementById('sidebar');
+  sb.classList.toggle('open');
+}
+
+// ── RENDER SENARAI MESYUARAT ──
+async function renderSenaraiMesyuarat(){
+  const container=document.getElementById('senaraiMesyuaratList');
+  container.innerHTML='<p style="color:var(--text-soft);">Memuatkan...</p>';
+  
+  try{
+    const{data,error}=await db.from('DPMM_MESYUARAT').select('*').order('tarikh',{ascending:false});
+    if(error)throw error;
+    
+    if(!data||data.length===0){
+      container.innerHTML='<p style="color:var(--text-faint);text-align:center;padding:2rem;">Tiada mesyuarat dijumpai.</p>';
+      return;
+    }
+    
+    container.innerHTML=data.map(m=>`
+      <div onclick="openMeetingDetail('${m.mesyuarat_id}')" 
+           style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:1rem;cursor:pointer;transition:all .15s;display:flex;justify-content:space-between;align-items:center;gap:1rem;"
+           onmouseover="this.style.borderColor='var(--blue)';this.style.boxShadow='0 2px 8px rgba(37,99,235,0.1)'"
+           onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span style="font-weight:700;color:var(--blue-dark);font-size:.9rem;">${m.nama||m.mesyuarat_id}</span>
+            ${m.aktif?'<span style="background:#DCFCE7;color:#15803D;font-size:.65rem;padding:2px 8px;border-radius:10px;font-weight:700;">AKTIF</span>':''}
+            ${m.event_type?'<span style="background:#EFF6FF;color:#1E40AF;font-size:.65rem;padding:2px 8px;border-radius:10px;font-weight:700;">'+m.event_type+'</span>':''}
+          </div>
+          <div style="display:flex;gap:12px;font-size:.75rem;color:var(--text-soft);">
+            <span>📅 ${m.tarikh?fmtDate(m.tarikh):'-'}</span>
+            <span>📍 ${m.tempat||'-'}</span>
+            ${m.bureau?'<span>🏢 '+m.bureau+'</span>':''}
+          </div>
+        </div>
+        <svg style="width:18px;height:18px;color:var(--text-faint);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </div>
+    `).join('');
+  }catch(e){
+    console.error(e);
+    container.innerHTML='<p style="color:var(--red);text-align:center;padding:2rem;">Ralat memuatkan data.</p>';
+  }
+}
+
+// ── OPEN MEETING DETAIL ──
+function openMeetingDetail(meetId){
+  const meet=meetings.find(m=>m.mesyuarat_id===meetId);
+  if(!meet)return;
+  
+  // Set as active meeting and load attendance
+  meeting=meet;
+  loadKehadiran();
+  
+  // Load RSVPs for this event
+  if(typeof loadEventRSVPs === 'function'){
+    loadEventRSVPs(meetId);
+  }
+  
+  // Load reminders for this event
+  if(typeof loadEventReminders === 'function'){
+    loadEventReminders(meetId).then(reminders => {
+      if(typeof renderRemindersList === 'function'){
+        renderRemindersList(reminders, 'remindersList');
+      }
+    });
+  }
+  
+  // Show meeting detail in Senarai Mesyuarat tab
+  const container=document.getElementById('senaraiMesyuaratList');
+  container.innerHTML=`
+    <div style="margin-bottom:1.5rem;">
+      <button onclick="renderSenaraiMesyuarat()" style="background:var(--blue-light);border:1.5px solid var(--blue-pale);color:var(--blue);padding:.4rem .8rem;border-radius:6px;cursor:pointer;font-size:.75rem;font-weight:600;">← Kembali ke Senarai</button>
+    </div>
+    <div class="card" style="padding:1.5rem;margin-bottom:1rem;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;">
+        <div>
+          <h3 style="font-family:'Outfit',sans-serif;font-size:1.2rem;font-weight:700;color:var(--blue-dark);margin-bottom:.5rem;">${meet.nama||meet.mesyuarat_id}</h3>
+          <div style="display:flex;gap:16px;font-size:.85rem;color:var(--text-soft);">
+            <span>📅 ${meet.tarikh?fmtDate(meet.tarikh):'-'}</span>
+            <span>📍 ${meet.tempat||'-'}</span>
+          </div>
+        </div>
+        ${meet.aktif?'<span style="background:#DCFCE7;color:#15803D;font-size:.7rem;padding:4px 10px;border-radius:10px;font-weight:700;">AKTIF</span>':''}
+      </div>
+    </div>
+    
+    <!-- Attendance Summary -->
+    <div class="card" style="padding:1.5rem;margin-bottom:1rem;">
+      <h4 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;color:var(--blue-dark);margin-bottom:1rem;">Ringkasan Kehadiran</h4>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;">
+        <div style="background:#DCFCE7;padding:1rem;border-radius:8px;text-align:center;">
+          <div style="font-size:1.8rem;font-weight:800;color:#16A34A;">${merged.filter(r=>r.status==='Hadir').length}</div>
+          <div style="font-size:.75rem;color:var(--text-soft);">Hadir</div>
+        </div>
+        <div style="background:#FEE2E2;padding:1rem;border-radius:8px;text-align:center;">
+          <div style="font-size:1.8rem;font-weight:800;color:#DC2626;">${merged.filter(r=>r.status==='Tidak Hadir').length}</div>
+          <div style="font-size:.75rem;color:var(--text-soft);">Tidak Hadir</div>
+        </div>
+        <div style="background:#FEF3C7;padding:1rem;border-radius:8px;text-align:center;">
+          <div style="font-size:1.8rem;font-weight:800;color:#D97706;">${merged.filter(r=>r.status==='Belum Dihubungi').length}</div>
+          <div style="font-size:.75rem;color:var(--text-soft);">Belum Dihubungi</div>
+        </div>
+        <div style="background:#F1F5F9;padding:1rem;border-radius:8px;text-align:center;">
+          <div style="font-size:1.8rem;font-weight:800;color:#64748B;">${merged.filter(r=>r.status==='Lain-lain').length}</div>
+          <div style="font-size:.75rem;color:var(--text-soft);">Lain-lain</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- RSVP Dashboard -->
+    <div id="rsvpDashboard" class="card" style="padding:1.5rem;margin-bottom:1rem;">
+      <h4 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;color:var(--blue-dark);margin-bottom:1rem;">Tracking RSVP</h4>
+      <p style="color:var(--text-soft);font-size:.85rem;">Memuatkan data RSVP...</p>
+    </div>
+    
+    <!-- QR Code Section -->
+    <div class="card" style="padding:1.5rem;margin-bottom:1rem;">
+      <h4 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;color:var(--blue-dark);margin-bottom:1rem;">QR Code untuk RSVP & Butiran Acara</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+        <div>
+          <p style="color:var(--text-soft);font-size:.85rem;margin-bottom:1rem;">Jana QR code untuk dikongsi melalui WhatsApp, emel, atau bahan cetak.</p>
+          <button onclick="generateEventQRCodeForMeeting('${meet.mesyuarat_id}')" class="btn btn-blue btn-shine" style="justify-content:center;">📱 Jana QR Code</button>
+        </div>
+        <div id="eventQRCodeContainer" style="display:flex;justify-content:center;align-items:center;min-height:200px;background:var(--blue-light);border-radius:8px;border:2px dashed var(--blue-pale);">
+          <p style="color:var(--text-faint);font-size:.85rem;">QR code akan dipaparkan di sini</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Attendee QR Code Section -->
+    <div class="card" style="padding:1.5rem;margin-bottom:1rem;">
+      <h4 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;color:var(--blue-dark);margin-bottom:1rem;">QR Code untuk Check-In Peserta</h4>
+      <p style="color:var(--text-soft);font-size:.85rem;margin-bottom:1rem;">Jana QR code individu untuk semua peserta yang disahkan hadir.</p>
+      <button onclick="generateAndDisplayAttendeeQRCodes()" class="btn btn-blue btn-shine" style="justify-content:center;margin-bottom:1rem;">🎫 Jana QR Code Peserta</button>
+      <div id="attendeeQRCodeContainer" style="min-height:200px;background:var(--blue-light);border-radius:8px;border:2px dashed var(--blue-pale);padding:1rem;">
+        <p style="text-align:center;color:var(--text-faint);font-size:.85rem;">QR code peserta akan dipaparkan di sini</p>
+      </div>
+    </div>
+    
+    <!-- Reminders Section -->
+    <div class="card" style="padding:1.5rem;margin-bottom:1rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+        <h4 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;color:var(--blue-dark);">Jadual Peringatan Automatik</h4>
+        <button onclick="openReminderModal('${meet.mesyuarat_id}')" class="btn btn-blue btn-shine" style="padding:.4rem .8rem;font-size:.8rem;">+ Jadual Peringatan</button>
+      </div>
+      <div id="remindersList" style="min-height:100px;">
+        <p style="text-align:center;color:var(--text-faint);font-size:.85rem;">Memuatkan peringatan...</p>
+      </div>
+    </div>
+    
+    <!-- Attendance Table -->
+    <div class="card" style="padding:1rem;">
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="background:var(--blue-dark);">
+              <th style="padding:.625rem 1rem;text-align:center;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">#</th>
+              <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">No. Ahli</th>
+              <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Nama Syarikat</th>
+              <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Nama PIC</th>
+              <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Status</th>
+              <th style="padding:.625rem 1rem;text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Catatan</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${merged.map((r,i)=>`
+              <tr style="border-bottom:1px solid #F0F5FF;">
+                <td style="padding:.5rem .75rem;text-align:center;font-size:.75rem;color:var(--text-soft);">${i+1}</td>
+                <td style="padding:.5rem .75rem;font-size:.75rem;font-weight:600;color:var(--blue-dark);">${r.NO_AHLI||'-'}</td>
+                <td style="padding:.5rem .75rem;font-size:.75rem;color:var(--text-mid);">${r.NAMA_AHLI||'-'}</td>
+                <td style="padding:.5rem .75rem;font-size:.75rem;color:var(--text-mid);">${r.NAMA||'-'}</td>
+                <td style="padding:.5rem .75rem;font-size:.75rem;">
+                  <span style="padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:600;background:${badgeClass(r.status).bg};color:${badgeClass(r.status).text};">${r.status||'-'}</span>
+                </td>
+                <td style="padding:.5rem .75rem;font-size:.75rem;color:var(--text-mid);">${r.catatan||'-'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ── RENDER WA TEMPLATES ──
+async function renderWaTemplates(){
+  const container=document.getElementById('waTemplateList');
+  const countEl=document.getElementById('tplCount');
+  container.innerHTML='<p style="font-size:.85rem;color:var(--text-faint);text-align:center;padding:2rem 0;">Memuatkan...</p>';
+  
+  try{
+    const{data,error}=await db.from('DPMM_WA_TEMPLATES').select('*').order('created_at',{ascending:false});
+    if(error)throw error;
+    
+    countEl.textContent=`${data?.length||0} template`;
+    
+    if(!data||data.length===0){
+      container.innerHTML='<p style="font-size:.85rem;color:var(--text-faint);text-align:center;padding:2rem 0;">Belum ada template.</p>';
+      return;
+    }
+    
+    container.innerHTML=data.map(t=>`
+      <div style="background:var(--blue-light);border:1.5px solid var(--blue-pale);border-radius:8px;padding:.75rem;">
+        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px;">
+          <span style="font-weight:700;color:var(--blue-dark);font-size:.8rem;">${t.nama}</span>
+          <div style="display:flex;gap:4px;">
+            <button onclick="editTpl('${t.id}')" class="btn btn-blue btn-shine" style="background:#fff;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:.7rem;cursor:pointer;">Edit</button>
+            <button onclick="deleteTpl('${t.id}')" class="btn btn-red btn-shine" style="background:#FEF2F2;border:1px solid #FECACA;color:var(--red);border-radius:4px;padding:2px 6px;font-size:.7rem;cursor:pointer;">Hapus</button>
+          </div>
+        </div>
+        <p style="font-size:.75rem;color:var(--text-mid);white-space:pre-wrap;">${t.body.substring(0,100)}${t.body.length>100?'...':''}</p>
+      </div>
+    `).join('');
+  }catch(e){
+    console.error(e);
+    container.innerHTML='<p style="color:var(--red);text-align:center;padding:2rem;">Ralat memuatkan template.</p>';
+  }
+}
+
+// ── LOAD AHLI DATA (from Member System) ──
+async function loadAhliData(){
+  const tbody=document.getElementById('ahliTbody');
+  const rowCount=document.getElementById('ahliRowCount');
+  const daerahSel=document.getElementById('srchDaerahAhli');
+  
+  tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:3.5rem;color:var(--text-faint);"><div class="spinner spinner-blue" style="margin:0 auto 10px;"></div><p>Memuatkan data...</p></td></tr>';
+  
+  try{
+    // Fetch from Member System Supabase
+    const memberUrl='https://lzoloupwtqmjyupvofhh.supabase.co';
+    const memberKey=window.SUPABASE_KEY||localStorage.getItem('dpmm_supabase_key');
+    
+    if(!memberKey){
+      tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:3.5rem;color:var(--red);">Kunci Supabase tidak dijumpai. Sila log masuk semula.</td></tr>';
+      return;
+    }
+    
+    const memberDb=supabase.createClient(memberUrl,memberKey);
+    
+    const{data,error}=await memberDb.from('AHLI DPMM JOHOR').select('*').order('NO_AHLI',{ascending:true});
+    if(error)throw error;
+    
+    // Store for filtering
+    window.ahliData=data||[];
+    
+    // Populate district filter
+    const districts=[...new Set(data?.map(d=>d.DAERAH).filter(Boolean)||[])].sort();
+    daerahSel.innerHTML='<option value="">Semua Daerah</option>'+districts.map(d=>`<option value="${d}">${d}</option>`).join('');
+    
+    rowCount.textContent=`${data?.length||0} ahli`;
+    
+    if(!data||data.length===0){
+      tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:3.5rem;color:var(--text-faint);">Tiada rekod dijumpai.</td></tr>';
+      return;
+    }
+    
+    renderAhliTable(data);
+  }catch(e){
+    console.error(e);
+    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:3.5rem;color:var(--red);">Ralat memuatkan data ahli.</td></tr>';
+  }
+}
+
+// ── RENDER AHLI TABLE ──
+function renderAhliTable(data){
+  const tbody=document.getElementById('ahliTbody');
+  tbody.innerHTML=data.map((a,i)=>`
+    <tr style="border-bottom:1px solid #F0F5FF;">
+      <td style="padding:.5rem .75rem;text-align:center;font-size:.75rem;color:var(--text-soft);">${i+1}</td>
+      <td style="padding:.5rem .75rem;font-size:.75rem;font-weight:600;color:var(--blue-dark);">${a.NO_AHLI||'-'}</td>
+      <td style="padding:.5rem .75rem;font-size:.75rem;color:var(--text-mid);">${a.JAWATAN||'-'}</td>
+      <td style="padding:.5rem .75rem;font-size:.75rem;color:var(--text-mid);">${a.NAMA_AHLI||'-'}</td>
+      <td style="padding:.5rem .75rem;font-size:.75rem;color:var(--text-mid);">${a.NAMA||'-'}</td>
+      <td style="padding:.5rem .75rem;font-size:.75rem;color:var(--text-mid);">${a.NO_HP||'-'}</td>
+      <td style="padding:.5rem .75rem;font-size:.75rem;color:var(--text-mid);">${a.DAERAH||'-'}</td>
+    </tr>
+  `).join('');
+}
+
+// ── FILTER AHLI TABLE ──
+function filterAhliTable(){
+  const search=document.getElementById('srchAhli').value.toLowerCase();
+  const daerah=document.getElementById('srchDaerahAhli').value;
+  
+  let filtered=window.ahliData||[];
+  
+  if(search){
+    filtered=filtered.filter(a=>
+      (a.NO_AHLI||'').toLowerCase().includes(search)||
+      (a.NAMA_AHLI||'').toLowerCase().includes(search)||
+      (a.NAMA||'').toLowerCase().includes(search)
+    );
+  }
+  
+  if(daerah){
+    filtered=filtered.filter(a=>a.DAERAH===daerah);
+  }
+  
+  document.getElementById('ahliRowCount').textContent=`${filtered.length} ahli`;
+  renderAhliTable(filtered);
+}
+
+// ── RENDER CALENDAR (simple upcoming list) ──
+async function renderCalendar(){
+  const container=document.getElementById('calendarContainer');
+  container.innerHTML='<p style="color:var(--text-soft);text-align:center;padding:2rem;">Memuatkan...</p>';
+  
+  try{
+    const{data,error}=await db.from('DPMM_MESYUARAT').select('*').order('tarikh',{ascending:true});
+    if(error)throw error;
+    
+    if(!data||data.length===0){
+      container.innerHTML='<p style="color:var(--text-faint);text-align:center;padding:2rem;">Tiada mesyuarat dijadualkan.</p>';
+      return;
+    }
+    
+    // Filter upcoming meetings (today or future)
+    const today=new Date().toISOString().split('T')[0];
+    const upcoming=data.filter(m=>m.tarikh>=today);
+    
+    if(upcoming.length===0){
+      container.innerHTML='<p style="color:var(--text-faint);text-align:center;padding:2rem;">Tiada mesyuarat akan datang.</p>';
+      return;
+    }
+    
+    container.innerHTML=upcoming.map(m=>`
+      <div style="background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:.875rem;margin-bottom:.5rem;display:flex;align-items:center;gap:12px;">
+        <div style="background:var(--blue);color:#fff;border-radius:8px;padding:.5rem .75rem;text-align:center;min-width:60px;">
+          <div style="font-size:.7rem;font-weight:600;">${new Date(m.tarikh).toLocaleDateString('ms-MY',{month:'short'})}</div>
+          <div style="font-size:1.1rem;font-weight:800;">${new Date(m.tarikh).getDate()}</div>
+        </div>
+        <div style="flex:1;">
+          <div style="font-weight:700;color:var(--blue-dark);font-size:.85rem;margin-bottom:2px;">${m.nama||m.mesyuarat_id}</div>
+          <div style="font-size:.75rem;color:var(--text-soft);">📍 ${m.tempat||'-'}</div>
+        </div>
+        ${m.aktif?'<span style="background:#DCFCE7;color:#15803D;font-size:.65rem;padding:2px 8px;border-radius:10px;font-weight:700;">AKTIF</span>':''}
+      </div>
+    `).join('');
+  }catch(e){
+    console.error(e);
+    container.innerHTML='<p style="color:var(--red);text-align:center;padding:2rem;">Ralat memuatkan jadual.</p>';
+  }
+}
+
+// ── CREATE MEETING ──
+async function createMeeting(){
+  const id=document.getElementById('fMeetId').value.trim();
+  const nama=document.getElementById('fMeetNama').value.trim();
+  const tarikh=document.getElementById('fMeetTarikh').value;
+  const tempat=document.getElementById('fMeetTempat').value.trim();
+  
+  if(!id||!nama){
+    toast('❌ ID dan Nama Mesyuarat diperlukan');
+    return;
+  }
+  
+  try{
+    const{error}=await db.from('DPMM_MESYUARAT').insert({
+      mesyuarat_id:id,
+      nama:nama,
+      tarikh:tarikh||null,
+      tempat:tempat||null,
+      aktif:false,
+      created_at:new Date().toISOString()
+    });
+    
+    if(error)throw error;
+    
+    toast('✅ Mesyuarat berjaya dicipta');
+    
+    // Clear form
+    document.getElementById('fMeetId').value='';
+    document.getElementById('fMeetNama').value='';
+    document.getElementById('fMeetTarikh').value='';
+    document.getElementById('fMeetTempat').value='';
+    
+    // Refresh calendar
+    renderCalendar();
+    
+    // Refresh meetings list
+    loadMeetings();
+  }catch(e){
+    console.error(e);
+    toast('❌ Ralat mencipta mesyuarat');
+  }
+}
+
+// ── DIGITAL CLOCK ──
+function updateClock(){
+  const now=new Date();
+  const hours=String(now.getHours()).padStart(2,'0');
+  const mins=String(now.getMinutes()).padStart(2,'0');
+  const secs=String(now.getSeconds()).padStart(2,'0');
+  const days=['Ahad','Isnin','Selasa','Rabu','Khamis','Jumaat','Sabtu'];
+  const months=['Jan','Feb','Mac','Apr','Mei','Jun','Jul','Ogo','Sep','Okt','Nov','Dis'];
+  document.getElementById('clockTime').textContent=hours+':'+mins;
+  document.getElementById('clockSec').textContent=secs;
+  document.getElementById('clockDate').textContent=days[now.getDay()]+', '+now.getDate()+' '+months[now.getMonth()]+' '+now.getFullYear();
+  document.getElementById('sbDateTime').textContent=hours+':'+mins;
+}
+setInterval(updateClock,1000);
+updateClock();
 function showAdminSub(sub){
   ['Mesyuarat','Pengguna','GDrive'].forEach(s=>{
     const c=document.getElementById('asub-'+s),b=document.getElementById('at'+s);
@@ -1634,6 +2654,7 @@ window.addEventListener('load',()=>{setTimeout(()=>{if(typeof google!=='undefine
     <input id="aimanInput" type="text" placeholder="Tanya Aiman..." class="inp" style="flex:1;font-size:.82rem;"
            onkeyup="if(event.key==='Enter')aimanSend()">
     <button onclick="aimanSend()" id="aimanSendBtn"
+            class="btn btn-blue btn-shine"
             style="background:var(--blue);color:#fff;border:none;border-radius:9px;padding:.5rem .75rem;cursor:pointer;font-size:.85rem;font-weight:700;transition:background .15s;"
             onmouseover="this.style.background='var(--blue-mid)'" onmouseout="this.style.background='var(--blue)'">➤</button>
   </div>
@@ -1648,12 +2669,21 @@ window.addEventListener('load',()=>{setTimeout(()=>{if(typeof google!=='undefine
     <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem;">
       <div id="blastSummary" style="background:var(--blue-light);border-radius:8px;padding:.75rem 1rem;font-size:.82rem;color:var(--text-mid);"></div>
       <div>
+        <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);margin-bottom:.5rem;">Lampiran (Pilihan)</p>
+        <select id="blastAttachment" class="inp" style="width:100%;">
+          <option value="">Tiada lampiran</option>
+          <option value="notis_mesyuarat">📄 Notis Mesyuarat</option>
+          <option value="buku_mesyuarat">📖 Buku Mesyuarat</option>
+          <option value="agenda">📋 Agenda Mesyuarat</option>
+        </select>
+      </div>
+      <div>
         <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);margin-bottom:.5rem;">Pratonton (5 pertama)</p>
         <div id="blastPreviewList" style="display:flex;flex-direction:column;gap:3px;max-height:160px;overflow-y:auto;"></div>
       </div>
       <div style="display:flex;gap:.5rem;justify-content:flex-end;">
-        <button class="btn btn-white" onclick="closeBlastModal()">Batal</button>
-        <button class="btn btn-blue" onclick="saveBlastQueue()" id="btnSaveBlast">💾 Simpan Antrian (0)</button>
+        <button class="btn btn-white btn-shine" onclick="closeBlastModal()">Batal</button>
+        <button class="btn btn-blue btn-shine" onclick="saveBlastQueue()" id="btnSaveBlast">💾 Simpan Antrian (0)</button>
       </div>
     </div>
   </div>
@@ -1675,12 +2705,19 @@ async function logAudit(tindakan,jadual,rekodId,butiran){
 
 // ── AIMAN AI ──
 let aimanHistory=[];
-const AIMAN_SYSTEM=`Kamu adalah Aiman, pembantu AI Sistem Pengurusan Mesyuarat DPMM Negeri Johor. Jawab dalam Bahasa Melayu ringkas dan profesional.
-Kamu boleh:
-1. Analisis data kehadiran mesyuarat semasa (boleh akses pembolehubah 'merged' dan 'meeting')
-2. Jana senarai blast WhatsApp — balas dengan JSON array: [{"no_hp":"60xxx","nama":"...","no_ahli":"..."}]
-3. Jawab soalan tentang mesyuarat, ahli, dan prosedur DPMM
-Jika soalan memerlukan data semasa, gunakan context yang disediakan.`;
+const AIMAN_SYSTEM = 'Kamu adalah Aiman, pembantu AI Sistem Pengurusan Mesyuarat DPMM Negeri Johor. Jawab dalam Bahasa Melayu ringkas dan profesional.\n' +
+'Kamu boleh:\n' +
+'1. Analisis data kehadiran mesyuarat semasa (boleh akses pembolehubah "merged" dan "meeting")\n' +
+'2. Jana senarai blast WhatsApp — balas dengan JSON array: [{"no_hp":"60xxx","nama":"...","no_ahli":"..."}]\n' +
+'3. Hantar jemputan mesyuarat — guna tindakan "send_invite"\n' +
+'4. Hantar peringatan mesyuarat — guna tindakan "send_reminder"\n' +
+'5. Jawab soalan tentang mesyuarat, ahli, dan prosedur DPMM\n' +
+'Jika soalan memerlukan data semasa, gunakan context yang disediakan.\n\n' +
+'TINDAKAN — balas dengan JSON dalam ```json```:\n' +
+'{"action":"send_invite"} — untuk hantar jemputan mesyuarat\n' +
+'{"action":"send_reminder"} — untuk hantar peringatan mesyuarat\n' +
+'{"action":"blast_list"} — untuk jana senarai penerima WA\n' +
+'{"action":"answer"} — untuk jawab soalan biasa';
 
 function toggleAiman(){
   const p=document.getElementById('aimanPanel');
@@ -1741,10 +2778,31 @@ Ringkasan kehadiran: ${merged.length} ahli — Hadir: ${merged.filter(r=>r.statu
 }
 
 function parseAimanIntent(reply){
-  const jsonMatch=reply.match(/\[[\s\S]*\]/);
-  if(!jsonMatch)return;
+  // Try to parse JSON action
+  const jsonMatch=reply.match(/\{[\s\S]*\}/);
+  if(jsonMatch){
+    try{
+      const action=JSON.parse(jsonMatch[0]);
+      if(action.action==='send_invite'){
+        if(!meeting){aimanAppendMsg('Sila pilih mesyuarat dahulu.','assistant');return;}
+        aimanAppendMsg('Sedia untuk hantar jemputan mesyuarat: '+meeting.nama,'assistant');
+        prepareBlast('Belum Dihubungi');
+        return;
+      }
+      if(action.action==='send_reminder'){
+        if(!meeting){aimanAppendMsg('Sila pilih mesyuarat dahulu.','assistant');return;}
+        aimanAppendMsg('Sedia untuk hantar peringatan mesyuarat: '+meeting.nama,'assistant');
+        prepareBlast('Semua');
+        return;
+      }
+    }catch(e){console.warn('parseAimanIntent action:',e);}
+  }
+  
+  // Try to parse blast list (array)
+  const listMatch=reply.match(/\[[\s\S]*\]/);
+  if(!listMatch)return;
   try{
-    const list=JSON.parse(jsonMatch[0]);
+    const list=JSON.parse(listMatch[0]);
     if(!Array.isArray(list)||list.length===0)return;
     if(!list[0].no_hp&&!list[0].nama)return;
     const yes=confirm(`Aiman menjana ${list.length} penerima WA blast. Buka pratonton?`);
@@ -1801,12 +2859,14 @@ function buildWaText(kandungan,member){
 async function saveBlastQueue(){
   if(!blastQueue.length){closeBlastModal();return;}
   const tpl=waTemplates.find(t=>t.id==selTplId)||waTemplates[0];
+  const attachment=document.getElementById('blastAttachment').value||'';
   const records=blastQueue.map(r=>({
     mesyuarat_id:meeting.mesyuarat_id,
     no_ahli:r.NO_AHLI||r.no_ahli||'',
     nama_ahli:r.NAMA_AHLI||r.nama||'',
     no_hp:cleanPhone(r.NO_HP||r.no_hp||''),
     teks_mesej:buildWaText(tpl?.kandungan||'Jemputan Mesyuarat',r),
+    lampiran:attachment,
     status:'Pending',
     dibuat_oleh:user.user_id,
     created_at:new Date().toISOString()
@@ -1816,9 +2876,10 @@ async function saveBlastQueue(){
   const{error}=await db.from('DPMM_BLAST_QUEUE').insert(records);
   if(error){toast('❌ Gagal simpan antrian: '+error.message,'err');return;}
   closeBlastModal();
-  toast(`✅ ${records.length} mesej disimpan. Jalankan blast-runner.js pada laptop untuk hantar via WAHA.`);
+  const attachmentText=attachment?` dengan lampiran ${attachment}`:'';
+  toast(`✅ ${records.length} mesej disimpan${attachmentText}. Jalankan blast-runner.js pada laptop untuk hantar via WAHA.`);
   await logSend('WA',records.length,'Antrian disimpan - pending WAHA');
-  logAudit('SIMPAN_BLAST_QUEUE','DPMM_BLAST_QUEUE',meeting.mesyuarat_id,{count:records.length});
+  logAudit('SIMPAN_BLAST_QUEUE','DPMM_BLAST_QUEUE',meeting.mesyuarat_id,{count:records.length,attachment});
 }
 
 // ── BULK ATTENDANCE ──
@@ -1887,11 +2948,14 @@ async function saveNewUser(){
   const nama=document.getElementById('fUserNama').value.trim();
   const pw=document.getElementById('fUserPw').value.trim();
   const peranan=document.getElementById('fUserPeranan').value;
+  const bureau=document.getElementById('fUserBureau').value;
   if(!uid||!nama||!pw){toast('⚠️ Semua medan wajib diisi.','err');return;}
-  const{error}=await db.from('DPMM_USERS').insert({user_id:uid,nama,kata_laluan:pw,peranan,aktif:true,created_at:new Date().toISOString()});
+  const insertData={user_id:uid,nama,kata_laluan:pw,peranan,aktif:true,created_at:new Date().toISOString()};
+  if(bureau) insertData.bureau = bureau;
+  const{error}=await db.from('DPMM_USERS').insert(insertData);
   if(error){toast('❌ '+(error.message.includes('unique')?'ID sudah wujud.':error.message),'err');return;}
   toast(`✅ Pengguna ${uid} ditambah!`);
-  ['fUserId','fUserNama','fUserPw'].forEach(id=>{document.getElementById(id).value='';});
+  ['fUserId','fUserNama','fUserPw','fUserBureau'].forEach(id=>{document.getElementById(id).value='';});
   await loadUsers();
 }
 </script>
