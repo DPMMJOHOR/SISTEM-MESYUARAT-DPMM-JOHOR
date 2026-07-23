@@ -452,17 +452,17 @@
   .hdr-clock { flex-shrink: 0; text-align: center; min-width: 180px; }
   .braun-clock { display: flex; flex-direction: column; align-items: center; }
   .clock-face {
-    width: 120px; height: 120px;
-    border: 3px solid #1a1a1a;
+    width: 80px; height: 80px;
+    border: 2px solid #1a1a1a;
     border-radius: 50%;
     position: relative;
-    background: #fff;
+    background: #1E3A8A;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
   }
   .clock-center {
     position: absolute;
-    width: 8px; height: 8px;
-    background: #1a1a1a;
+    width: 6px; height: 6px;
+    background: #fff;
     border-radius: 50%;
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
@@ -476,17 +476,17 @@
     border-radius: 2px;
   }
   .hour-hand {
-    width: 4px; height: 35px;
-    background: #1a1a1a;
-    margin-left: -2px;
-  }
-  .minute-hand {
-    width: 3px; height: 45px;
-    background: #333;
+    width: 3px; height: 25px;
+    background: #fff;
     margin-left: -1.5px;
   }
+  .minute-hand {
+    width: 2px; height: 30px;
+    background: #e0e0e0;
+    margin-left: -1px;
+  }
   .second-hand {
-    width: 1px; height: 50px;
+    width: 1px; height: 35px;
     background: #e63946;
     margin-left: -0.5px;
   }
