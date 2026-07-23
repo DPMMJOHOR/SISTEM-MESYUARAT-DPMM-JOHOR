@@ -699,8 +699,8 @@
           </div>
         </div>
       </div>
-      <h1 style="font-family:'Outfit',sans-serif;font-size:1.4rem;font-weight:800;color:var(--blue-dark);">SISTEM HEBAHAN</h1>
-      <p style="font-size:.9rem;color:var(--blue);font-weight:600;margin-top:2px;text-transform:uppercase;">DEWAN PERNIAGAN MELAYU MALAYSIA</p>
+      <h1 style="font-family:'Outfit',sans-serif;font-size:1.4rem;font-weight:800;color:#DC2626;">SISTEM HEBAHAN</h1>
+      <p style="font-size:.9rem;color:#1E3A8A;font-weight:600;margin-top:2px;text-transform:uppercase;">DEWAN PERNIAGAN MELAYU MALAYSIA</p>
       <p style="font-size:.9rem;color:#1E3A8A;font-weight:700;letter-spacing:.03em;">NEGERI JOHOR</p>
     </div>
 
@@ -742,8 +742,8 @@
           <span style="font-family:'Outfit',sans-serif;font-weight:900;color:#fff;font-size:1.8rem;">DPMM</span>
         </div>
       </div>
-      <div class="sb-sys-name" style="font-size:1.2rem;">SISTEM HEBAHAN</div>
-      <div class="sb-sys-name" style="font-size:1rem;font-weight:600;">DPMM JOHOR</div>
+      <div class="sb-sys-name" style="font-size:1.2rem;color:#DC2626;">SISTEM HEBAHAN</div>
+      <div class="sb-sys-name" style="font-size:1rem;font-weight:600;color:#1E3A8A;">DPMM JOHOR</div>
     </div>
 
     <div class="sb-divider"></div>
@@ -1568,7 +1568,7 @@ async function bootApp(){
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
   // Update sidebar user display
-  document.getElementById('sbUserName').textContent=user.nama;
+  document.getElementById('sbUserName').textContent='ADMIN';
   if(isAdmin()){
     document.querySelectorAll('.admin-only').forEach(el=>el.classList.remove('hidden'));
   }else{
