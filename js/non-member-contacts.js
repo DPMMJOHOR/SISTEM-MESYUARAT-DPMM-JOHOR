@@ -21,7 +21,7 @@ async function generateHash(value) {
  */
 async function encryptPII(plainText) {
   try {
-    const { data, error } = await supabase.functions.invoke('encrypt-pii', {
+    const { data, error } = await db.functions.invoke('encrypt-pii', {
       body: { plainText }
     });
     if (error) throw error;
@@ -38,7 +38,7 @@ async function encryptPII(plainText) {
  */
 async function decryptPII(encryptedText) {
   try {
-    const { data, error } = await supabase.functions.invoke('decrypt-pii', {
+    const { data, error } = await db.functions.invoke('decrypt-pii', {
       body: { encryptedText }
     });
     if (error) throw error;
@@ -88,7 +88,7 @@ function validateContact(contact) {
  */
 async function loadNonMemberContacts() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('DPMM_NON_MEMBER_CONTACTS')
       .select('*')
       .order('created_at', { ascending: false });
@@ -189,7 +189,7 @@ async function addNonMemberContact() {
     const emailHash = await generateHash(email);
     const phoneHash = await generateHash(phone);
     
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('DPMM_NON_MEMBER_CONTACTS')
       .insert({
         nama,
@@ -305,7 +305,7 @@ async function uploadNonMemberContacts() {
     })));
     
     // Insert contacts
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('DPMM_NON_MEMBER_CONTACTS')
       .insert(contactsToInsert)
       .select();
@@ -370,7 +370,7 @@ async function editNonMemberContact(id) {
     const emailHash = await generateHash(newEmail);
     const phoneHash = await generateHash(newPhone);
     
-    const { error } = await supabase
+    const { error } = await db
       .from('DPMM_NON_MEMBER_CONTACTS')
       .update({
         nama: newNama,
@@ -400,7 +400,7 @@ async function deleteNonMemberContact(id) {
   if (!confirm('Adakah anda pasti mahu memadam hubungan ini?')) return;
   
   try {
-    const { error } = await supabase
+    const { error } = await db
       .from('DPMM_NON_MEMBER_CONTACTS')
       .delete()
       .eq('id', id);
