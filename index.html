@@ -16,9 +16,10 @@
      HTTPS Redirect: GitHub Pages automatically enforces HTTPS - no additional configuration needed. -->
 <meta http-equiv="Content-Security-Policy-Report-Only" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; connect-src 'self' https://lzoloupwtqmjyupvofhh.supabase.co https://api.groq.com; img-src 'self' data: https:; report-uri csp-report-endpoint">
 <title>Sistem Pengurusan Mesyuarat — DPMM Negeri Johor</title>
-<script src="https://cdn.tailwindcss.com" integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" integrity="sha384-sgcvElP/LlNRtORGYFLO/9K/bENcpJK19HgvqslWXog6d8f/Va4TpltGiBlGntCM" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js" integrity="sha384-qGFE4FIJLgCFuYs3nzg39XpCtvT5AZUhaBdjB3e1+vpKQa03AkyWOyBSFb9OcQ/g" crossorigin="anonymous"></script>
+<script src="https://cdn.tailwindcss.com/3.4.0" integrity="sha384-0453916c702789b933a1cd5ad9d4a11989a7834e9af857d0113f81f5482ef93f28f805908df438389796b34db82d79cd" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js" integrity="sha384-b43e97f700df4d174aa6e3e81c566b556d915e34984968cb04f597c691e9ad65a5f5e687970974e5a4631ec88a17dee7" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js" integrity="sha384-a86144e052092e0085b98b379f3837f57a42b6f4f90195216817630777b5fafa4a41ad37024c963b205215bf4e710fe0" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js" integrity="sha384-7304ba61d84b23b5d2eb47a80e20be7a0574a87a7ccc8f829ace3a4749db9fc26b9a803357db852fad1eb4c6610274ae" crossorigin="anonymous"></script>
 <script src="config-local.js" onerror="console.info('config-local.js tidak dijumpai — menggunakan konfigurasi lalai.')"></script>
 <script src="js/validation.js"></script>
 <script src="js/waha-integration.js"></script>
@@ -1408,7 +1409,7 @@ async function doLogin() {
   
   // Check account lockout (5 failed attempts in 15 minutes)
   const lockoutKey = `login_lockout_${id}`;
-  const lockoutData = localStorage.getItem(lockoutKey);
+  const lockoutData = sessionStorage.getItem(lockoutKey);
   if (lockoutData) {
     const { attempts, timestamp } = JSON.parse(lockoutData);
     const timeElapsed = Date.now() - timestamp;
@@ -1420,7 +1421,7 @@ async function doLogin() {
       return;
     } else if (timeElapsed >= lockoutDuration) {
       // Reset lockout after 15 minutes
-      localStorage.removeItem(lockoutKey);
+      sessionStorage.removeItem(lockoutKey);
     }
   }
   
@@ -1459,12 +1460,12 @@ async function doLogin() {
     }
     
     // Clear failed login attempts on successful login
-    localStorage.removeItem(lockoutKey);
+    sessionStorage.removeItem(lockoutKey);
     
     // Set session timeout (30 minutes of inactivity)
     const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
-    localStorage.setItem('session_last_activity', Date.now().toString());
-    localStorage.setItem('session_timeout', SESSION_TIMEOUT.toString());
+    sessionStorage.setItem('session_last_activity', Date.now().toString());
+    sessionStorage.setItem('session_timeout', SESSION_TIMEOUT.toString());
     
     user={user_id:data.user_id,nama:data.nama,peranan:data.peranan};
     logAudit('LOGIN','DPMM_USERS',user.user_id);
@@ -1475,7 +1476,7 @@ async function doLogin() {
 
 function trackFailedLogin(userId) {
   const lockoutKey = `login_lockout_${userId}`;
-  const lockoutData = localStorage.getItem(lockoutKey);
+  const lockoutData = sessionStorage.getItem(lockoutKey);
   
   if (lockoutData) {
     const { attempts, timestamp } = JSON.parse(lockoutData);
@@ -1484,14 +1485,14 @@ function trackFailedLogin(userId) {
     
     if (timeElapsed >= lockoutDuration) {
       // Reset after 15 minutes
-      localStorage.setItem(lockoutKey, JSON.stringify({ attempts: 1, timestamp: Date.now() }));
+      sessionStorage.setItem(lockoutKey, JSON.stringify({ attempts: 1, timestamp: Date.now() }));
     } else {
       // Increment attempts
-      localStorage.setItem(lockoutKey, JSON.stringify({ attempts: attempts + 1, timestamp }));
+      sessionStorage.setItem(lockoutKey, JSON.stringify({ attempts: attempts + 1, timestamp }));
     }
   } else {
     // First failed attempt
-    localStorage.setItem(lockoutKey, JSON.stringify({ attempts: 1, timestamp: Date.now() }));
+    sessionStorage.setItem(lockoutKey, JSON.stringify({ attempts: 1, timestamp: Date.now() }));
   }
 }
 function setLoginErr(msg){const el=document.getElementById('loginErr');el.textContent=msg;el.classList.remove('hidden');}
@@ -1499,8 +1500,8 @@ function setLoginErr(msg){const el=document.getElementById('loginErr');el.textCo
 function checkSessionTimeout() {
   if (!user) return;
   
-  const lastActivity = localStorage.getItem('session_last_activity');
-  const timeout = localStorage.getItem('session_timeout');
+  const lastActivity = sessionStorage.getItem('session_last_activity');
+  const timeout = sessionStorage.getItem('session_timeout');
   
   if (!lastActivity || !timeout) return;
   
@@ -1516,7 +1517,7 @@ function checkSessionTimeout() {
 
 function updateSessionActivity() {
   if (user) {
-    localStorage.setItem('session_last_activity', Date.now().toString());
+    sessionStorage.setItem('session_last_activity', Date.now().toString());
   }
 }
 
@@ -1530,6 +1531,7 @@ document.addEventListener('scroll', updateSessionActivity);
 
 function doLogout(){
   user=meeting=null; members=kehadiran=merged=filtered=[]; waTemplates=[]; blastQueue=[]; selectedRows=new Set();
+  sessionStorage.clear();
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('mainApp').classList.add('hidden');
   document.getElementById('lgId').value=''; document.getElementById('lgPw').value='';
@@ -1558,8 +1560,8 @@ async function loadMembers(){
     members=data;
     const daerahs=[...new Set(data.map(m=>m.DAERAH).filter(Boolean))].sort();
     const sel=document.getElementById('srchDaerah');
-    sel.innerHTML='<option value="">Semua Daerah</option>';
-    daerahs.forEach(d=>sel.innerHTML+=`<option>${d}</option>`);
+    sel.innerHTML=DOMPurify.sanitize('<option value="">Semua Daerah</option>');
+    daerahs.forEach(d=>sel.innerHTML+=DOMPurify.sanitize(`<option>${d}</option>`));
   }
 }
 
@@ -1585,7 +1587,7 @@ async function onMeetingChange(){
 }
 function renderMeetList(list){
   const el=document.getElementById('meetList'); if(!el)return;
-  el.innerHTML=list.map(m=>`
+  el.innerHTML=DOMPurify.sanitize(list.map(m=>`
     <div class="meet-item ${m.aktif?'aktif':''}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
         <div style="flex:1;min-width:0;">
@@ -1605,7 +1607,7 @@ function renderMeetList(list){
         </div>
       </div>
     </div>
-  `).join('');
+  `).join(''));
 }
 async function setActive(meetId){
   await db.from('DPMM_MESYUARAT').update({aktif:false}).neq('mesyuarat_id','__none__');
@@ -1680,7 +1682,7 @@ function renderTable(){
     return;
   }
   document.getElementById('rowCount').textContent=`${filtered.length} ahli`;
-  tbody.innerHTML=filtered.map((r,i)=>{
+  tbody.innerHTML=DOMPurify.sanitize(filtered.map((r,i)=>{
     const badge=badgeClass(r.status), noAhli=esc(r.NO_AHLI||''), nama=esc(r.NAMA_AHLI||'-'), catatan=esc(r.catatan||'');
     const phone=cleanPhone(r.NO_HP);
     // Action buttons
@@ -1708,7 +1710,7 @@ function renderTable(){
       ${adminCols}
       <td style="padding:.4rem .6rem;"><div style="display:flex;gap:3px;">${editBtn}${waBtn}</div></td>
     </tr>`;
-  }).join('');
+  }).join(''));
 }
 function badgeClass(s){ return s==='Hadir'?'badge-hadir':s==='Tidak Hadir'?'badge-tidak':s==='Belum Dihubungi'?'badge-belum':'badge-lain'; }
 
@@ -1780,7 +1782,7 @@ async function renderTplList(){
     el.innerHTML='<p style="font-size:.85rem;color:var(--text-faint);text-align:center;padding:2rem 0;">Belum ada template. Tambah satu di sebelah kiri.</p>';
     return;
   }
-  el.innerHTML=waTemplates.map(t=>`
+  el.innerHTML=DOMPurify.sanitize(waTemplates.map(t=>`
     <div class="wa-template-card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;">
         <div style="display:flex;align-items:center;gap:7px;flex:1;min-width:0;">
@@ -1797,7 +1799,7 @@ async function renderTplList(){
       <div style="font-size:.78rem;color:var(--text-soft);background:var(--blue-light);border-radius:7px;padding:.5rem .75rem;white-space:pre-wrap;max-height:70px;overflow:hidden;line-height:1.5;">${esc(t.kandungan).substring(0,200)}${t.kandungan.length>200?'…':''}</div>
       ${t.image_url?`<div style="margin-top:.5rem;"><img src="${t.image_url}" style="max-width:100%;max-height:100px;border-radius:6px;border:1px solid var(--border);"></div>`:''}
     </div>
-  `).join('');
+  `).join(''));
 }
 
 async function saveTpl(){
@@ -2204,7 +2206,7 @@ async function renderSenaraiMesyuarat(){
       return;
     }
     
-    container.innerHTML=data.map(m=>`
+    container.innerHTML=DOMPurify.sanitize(data.map(m=>`
       <div onclick="openMeetingDetail('${m.mesyuarat_id}')" 
            style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:1rem;cursor:pointer;transition:all .15s;display:flex;justify-content:space-between;align-items:center;gap:1rem;"
            onmouseover="this.style.borderColor='var(--blue)';this.style.boxShadow='0 2px 8px rgba(37,99,235,0.1)'"
@@ -2223,7 +2225,7 @@ async function renderSenaraiMesyuarat(){
         </div>
         <svg style="width:18px;height:18px;color:var(--text-faint);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
       </div>
-    `).join('');
+    `).join(''));
   }catch(e){
     console.error(e);
     container.innerHTML='<p style="color:var(--red);text-align:center;padding:2rem;">Ralat memuatkan data.</p>';
@@ -2255,7 +2257,7 @@ function openMeetingDetail(meetId){
   
   // Show meeting detail in Senarai Mesyuarat tab
   const container=document.getElementById('senaraiMesyuaratList');
-  container.innerHTML=`
+  container.innerHTML=DOMPurify.sanitize(`
     <div style="margin-bottom:1.5rem;">
       <button onclick="renderSenaraiMesyuarat()" style="background:var(--blue-light);border:1.5px solid var(--blue-pale);color:var(--blue);padding:.4rem .8rem;border-radius:6px;cursor:pointer;font-size:.75rem;font-weight:600;">← Kembali ke Senarai</button>
     </div>
@@ -2367,7 +2369,7 @@ function openMeetingDetail(meetId){
         </table>
       </div>
     </div>
-  `;
+  `);
 }
 
 // ── RENDER WA TEMPLATES ──
@@ -2387,7 +2389,7 @@ async function renderWaTemplates(){
       return;
     }
     
-    container.innerHTML=data.map(t=>`
+    container.innerHTML=DOMPurify.sanitize(data.map(t=>`
       <div style="background:var(--blue-light);border:1.5px solid var(--blue-pale);border-radius:8px;padding:.75rem;">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px;">
           <span style="font-weight:700;color:var(--blue-dark);font-size:.8rem;">${t.nama}</span>
@@ -2398,7 +2400,7 @@ async function renderWaTemplates(){
         </div>
         <p style="font-size:.75rem;color:var(--text-mid);white-space:pre-wrap;">${t.body.substring(0,100)}${t.body.length>100?'...':''}</p>
       </div>
-    `).join('');
+    `).join(''));
   }catch(e){
     console.error(e);
     container.innerHTML='<p style="color:var(--red);text-align:center;padding:2rem;">Ralat memuatkan template.</p>';
@@ -2416,7 +2418,7 @@ async function loadAhliData(){
   try{
     // Fetch from Member System Supabase
     const memberUrl='https://lzoloupwtqmjyupvofhh.supabase.co';
-    const memberKey=window.SUPABASE_KEY||localStorage.getItem('dpmm_supabase_key');
+    const memberKey=window.SUPABASE_KEY||sessionStorage.getItem('dpmm_supabase_key');
     
     if(!memberKey){
       tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:3.5rem;color:var(--red);">Kunci Supabase tidak dijumpai. Sila log masuk semula.</td></tr>';
@@ -2615,9 +2617,14 @@ function toast(msg,type='ok'){
 }
 
 // ── GOOGLE CALLBACKS ──
-function gapiLoaded(){gapi.load('client',()=>{gapi.client.init({discoveryDocs:['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']}).then(()=>{gapiReady=true;});});}
-function gisLoaded(){if(GOOGLE_CID!=='YOUR_GOOGLE_CID_HERE')initGIS();}
-window.addEventListener('load',()=>{setTimeout(()=>{if(typeof google!=='undefined'&&google.accounts)gisLoaded();},1500);});
+function gapiLoaded(){
+  gapi.load('client',()=>{
+    gapi.client.init({discoveryDocs:['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']}).then(()=>{
+      gapiReady=true;
+      if(GOOGLE_CID!=='YOUR_GOOGLE_CID_HERE')initGIS();
+    });
+  });
+}
 </script>
 
 <script>function gapiLoadCallback(){gapiLoaded();}</script>
