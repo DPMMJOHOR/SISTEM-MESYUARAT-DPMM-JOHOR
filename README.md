@@ -1,4 +1,4 @@
-# Sistem Pengurusan Mesyuarat — DPMM Negeri Johor
+# Sistem Hebahan — DPMM Negeri Johor
 
 Sistem pengurusan kehadiran mesyuarat berasaskan web untuk Dewan Perniagaan Melayu Malaysia Negeri Johor.
 
@@ -11,6 +11,8 @@ Sistem pengurusan kehadiran mesyuarat berasaskan web untuk Dewan Perniagaan Mela
 - **Google Drive** — folder mesyuarat dijana automatik
 - **Template WhatsApp** — simpan dan guna semula template mesej
 - **Eksport CSV & Cetak** — laporan kehadiran dalam pelbagai format
+- **Jam Analog Braun** — jam analog minimalis dengan gaya Braun x Paul Smith
+- **UI Terkini** — reka bentuk dengan warna merah/biru DPMM, tanpa emoji, layout yang lebih bersih
 
 ## Peranan Pengguna
 
