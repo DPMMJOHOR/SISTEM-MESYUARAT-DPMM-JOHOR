@@ -1560,8 +1560,10 @@ async function loadMembers(){
     members=data;
     const daerahs=[...new Set(data.map(m=>m.DAERAH).filter(Boolean))].sort();
     const sel=document.getElementById('srchDaerah');
-    sel.innerHTML=DOMPurify.sanitize('<option value="">Semua Daerah</option>');
-    daerahs.forEach(d=>sel.innerHTML+=DOMPurify.sanitize(`<option>${d}</option>`));
+    if(sel){
+      sel.innerHTML=DOMPurify.sanitize('<option value="">Semua Daerah</option>');
+      daerahs.forEach(d=>sel.innerHTML+=DOMPurify.sanitize(`<option>${d}</option>`));
+    }
   }
 }
 
@@ -2379,7 +2381,7 @@ async function renderWaTemplates(){
   container.innerHTML='<p style="font-size:.85rem;color:var(--text-faint);text-align:center;padding:2rem 0;">Memuatkan...</p>';
   
   try{
-    const{data,error}=await db.from('DPMM_WA_TEMPLATES').select('*').order('created_at',{ascending:false});
+    const{data,error}=await db.from('DPMM_TEMPLATES').select('*').order('created_at',{ascending:false});
     if(error)throw error;
     
     countEl.textContent=`${data?.length||0} template`;
@@ -2706,7 +2708,7 @@ async function logSend(jenis,bilangan,filterNama){
 // ── AUDIT LOG ──
 async function logAudit(tindakan,jadual,rekodId,butiran){
   try{
-    await db.from('DPMM_AUDIT_LOG').insert({tindakan,jadual,rekod_id:rekodId||null,pengguna:user?.user_id||'anon',butiran:butiran||null});
+    await db.from('DPMM_AUDIT_LOG').insert({action:tindakan,table_name:jadual,record_id:rekodId||null,user_id:user?.user_id||'anon'});
   }catch(e){console.warn('logAudit failed (non-blocking):',e);}
 }
 
