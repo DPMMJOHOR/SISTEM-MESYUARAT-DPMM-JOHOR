@@ -34,9 +34,14 @@ jobs:
       - name: Inject secrets into config-local.js
         run: |
           if [ -f "config-local.js" ]; then
+            echo "Current config-local.js content:"
+            cat config-local.js
+            echo "Injecting secrets..."
             sed -i "s/YOUR_SUPABASE_KEY_HERE/${{ secrets.SUPABASE_KEY }}/" config-local.js
             sed -i "s/YOUR_GOOGLE_CID_HERE/${{ secrets.GOOGLE_CID }}/" config-local.js
             sed -i "s/YOUR_TURNSTILE_SITE_KEY_HERE/${{ secrets.TURNSTILE_SITE_KEY }}/" config-local.js
+            echo "After injection:"
+            cat config-local.js
             echo "Secrets injected successfully"
           else
             echo "config-local.js not found, skipping secret injection"
